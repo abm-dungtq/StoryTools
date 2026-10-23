@@ -5,7 +5,8 @@ import path from 'node:path';
 import express from 'express';
 import multer from 'multer';
 import * as store from './storage.js';
-import { agyVersion, generateCaption, generateFrames, generateImage, generateStoryPlan, listModels, placeBubbles } from './agy.js';
+import { characterRefName, styleRefName } from '../src/lib/ref-names.js';
+import { agyVersion, describeCharacter, generateCaption, generateFrames, generateImage, generateStoryPlan, listModels, placeBubbles } from './agy.js';
 import { shareStatus, startShare, stopShare } from './lan-share.js';
 
 const PORT = Number(process.env.PORT) || 5174;
@@ -28,6 +29,8 @@ function clientSignal(res) {
   return controller.signal;
 }
 
+const POSITIONS = ['left', 'center', 'right'];
+
 /** Converts model-written frames (character names) into stored frames (character ids). */
 function toStoredFrames(frames, characters) {
   const byName = new Map(characters.map((c) => [c.name.trim().toLowerCase(), c.id]));
@@ -38,6 +41,11 @@ function toStoredFrames(frames, characters) {
     action: f.action || '',
     expression: f.expression || '',
     characterIds: [...new Set((f.characters || []).map(toId).filter(Boolean))],
+    positions: Object.fromEntries(
+      (f.positions || [])
+        .map((p) => [toId(p?.name), p?.position])
+        .filter(([id, pos]) => id && POSITIONS.includes(pos)),
+    ),
     dialogues: (f.dialogues || []).map((d) => ({ speakerId: toId(d.speaker), text: d.text || '' })),
     prompt: '',
     images: [],
@@ -80,6 +88,22 @@ app.post('/api/characters/images', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Thiếu file ảnh' });
   const file = await store.saveImage(store.CHARACTER_IMAGE_DIR, req.file.buffer, req.file.mimetype);
   res.json({ file });
+});
+
+// Reads the reference images once and returns visible traits. The client sends the list itself: autosave may lag behind.
+app.post('/api/characters/traits', async (req, res) => {
+  const { name = '', description = '', images } = req.body || {};
+  if (!Array.isArray(images) || !images.length) return res.status(400).json({ error: 'Nhân vật chưa có ảnh mẫu' });
+  const inline = [];
+  for (const file of images.slice(0, 3)) inline.push(await store.readImageAsInline(store.CHARACTER_IMAGE_DIR, String(file)));
+  const { traits } = await describeCharacter({
+    settings: await store.getSettings(),
+    name: String(name),
+    description: String(description),
+    images: inline,
+    signal: clientSignal(res),
+  });
+  res.json({ traits });
 });
 
 // ---- projects ----
@@ -187,14 +211,23 @@ app.post('/api/projects/:id/images/generate', async (req, res) => {
   const characters = (await store.listCharacters()).filter((c) => characterIds.includes(c.id));
   const refs = [];
   for (const c of characters) {
-    for (const file of c.images || []) {
-      refs.push({ label: `Reference image of the character "${c.name}"`, ...(await store.readImageAsInline(store.CHARACTER_IMAGE_DIR, file)) });
+    for (const [i, file] of (c.images || []).entries()) {
+      refs.push({
+        name: characterRefName(c.id, i, file),
+        label: `Reference image of "${c.name}"${c.traits?.trim() ? ` (${c.traits.trim()})` : ''}. Shows only this character.`,
+        ...(await store.readImageAsInline(store.CHARACTER_IMAGE_DIR, file)),
+      });
     }
   }
   const frameDir = path.join(store.PANEL_IMAGE_DIR, store.assertSafeName(project.id));
   if (styleRefImage) {
     refs.push({
-      label: 'Previous panel of the same comic – match its art style, color palette and character designs',
+      name: styleRefName(styleRefImage),
+      // With several people the previous panel is the main source of swapped outfits, so it may only lend its style.
+      label:
+        characters.length > 1
+          ? 'Previous panel of the same comic. Use it ONLY for art style, line work and color palette. Do NOT copy who stands where, who wears what, or any face from it.'
+          : 'Previous panel of the same comic – match its art style, color palette and character design',
       ...(await store.readImageAsInline(frameDir, styleRefImage)),
     });
   }

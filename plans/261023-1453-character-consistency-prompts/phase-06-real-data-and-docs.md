@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: "Điền đặc điểm cho nhân vật thật, cập nhật tài liệu, commit"
-status: pending
+status: completed
 depends_on: [5]
 ---
 

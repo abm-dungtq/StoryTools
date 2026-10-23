@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Đặc điểm nhận dạng nhân vật do agy rút từ ảnh mẫu"
-status: pending
+status: completed
 depends_on: [1]
 ---
 

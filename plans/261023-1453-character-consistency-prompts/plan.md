@@ -1,6 +1,6 @@
 ---
 title: "Giảm lẫn nhân vật trong khung nhiều người bằng prompt và nhãn ảnh mẫu"
-status: pending
+status: completed
 created: 2026-10-23
 mode: advice
 ---

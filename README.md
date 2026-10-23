@@ -70,6 +70,8 @@ Ba mức này quyết định mọi thao tác còn lại, nên nắm trước kh
 - **Mô tả cố định**: tuổi, kiểu tóc, màu mắt, trang phục, phụ kiện. Càng cụ thể càng ổn định. Ví dụ: *cậu bé 13 tuổi, tóc đen rối xù, áo polo vàng mù tạt, tạp dề xanh rêu, giày vải đỏ*.
 - **Ảnh tham chiếu**: 1–3 ảnh rõ mặt, nền đơn giản. Mọi lần vẽ đều gửi kèm các ảnh này.
 
+Sau khi thêm ảnh mẫu, AI đọc ảnh một lần và điền ô **Đặc điểm nhận dạng** (tóc, kính, trang phục kèm màu…). Sửa tay được; bấm **Rút lại** để AI đọc lại. Đặc điểm này giúp AI vẽ không trộn người này với người kia trong khung có nhiều nhân vật.
+
 Mô tả được chèn tự động vào prompt của mọi khung có nhân vật đó, nên không cần nhắc lại khi viết kịch bản.
 
 ## Tạo truyện tự động
@@ -157,6 +159,7 @@ Hết quota thì agy báo lỗi; chờ quota hồi rồi bấm vẽ tiếp phầ
 - Ảnh tham chiếu nên chụp rõ mặt, đủ sáng, nền đơn giản, và cùng một phong cách vẽ với truyện.
 - Giữ bật tuỳ chọn **Gửi kèm ảnh khung trước** ở bước 2: khung sau bám theo màu sắc và nét vẽ của khung trước.
 - Mô tả nhân vật nên nói về đặc điểm không đổi (tóc, dáng người, trang phục thường ngày), còn cảm xúc và tư thế để phần biểu cảm và hành động của từng khung lo.
+- Kịch bản AI viết ghi sẵn ai đứng trái, giữa, phải. Khung đã vẽ trước bản này vẫn giữ prompt cũ; bấm **Tạo lại prompt từ kịch bản** ở bước 2 để dùng cách ghép prompt mới.
 - Khung nào lệch nhân vật thì bấm **Tạo lại** riêng khung đó, lịch sử ảnh cũ vẫn được giữ để quay về.
 - Muốn có đồng hồ hay mốc thời gian thì ghi thẳng vào bối cảnh hoặc prompt; tool không còn trường giờ riêng vì AI hay vẽ đồng hồ thừa.
 

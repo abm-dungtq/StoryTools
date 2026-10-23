@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Kịch bản AI ghi vị trí từng nhân vật trong khung"
-status: pending
+status: completed
 depends_on: [1]
 ---
 

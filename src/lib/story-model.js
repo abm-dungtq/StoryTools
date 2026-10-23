@@ -9,6 +9,7 @@ export const createFrame = (patch = {}) => ({
   action: '',
   expression: '',
   characterIds: [],
+  positions: {},
   dialogues: [],
   prompt: '',
   images: [],

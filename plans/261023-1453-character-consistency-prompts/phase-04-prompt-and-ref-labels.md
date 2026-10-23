@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Prompt theo từng nhân vật, tên file ảnh mẫu theo nhân vật, nhãn ảnh khung trước"
-status: pending
+status: completed
 depends_on: [2, 3]
 ---
 

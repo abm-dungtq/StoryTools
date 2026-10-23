@@ -69,7 +69,8 @@ const castText = (characters) =>
 
 const FRAME_RULES = `- Bối cảnh, hành động, biểu cảm viết cụ thể để hoạ sĩ vẽ được.
 - Nếu cần thể hiện thời gian trong ngày, mô tả qua ánh sáng, bầu trời, hoạt động ngay trong bối cảnh; không thêm đồng hồ trừ khi cốt truyện thật sự cần.
-- Lời thoại tiếng Việt tự nhiên, rất ngắn (tối đa khoảng 10 từ mỗi câu), mỗi khung 0–2 câu.`;
+- Lời thoại tiếng Việt tự nhiên, rất ngắn (tối đa khoảng 10 từ mỗi câu), mỗi khung 0–2 câu.
+- positions: mỗi nhân vật xuất hiện có đúng một vị trí left, center hoặc right; khung có từ 2 nhân vật thì không xếp hai người cùng vị trí, và hành động phải khớp vị trí đó.`;
 
 const FRAME_ITEM = {
   type: 'object',
@@ -78,6 +79,18 @@ const FRAME_ITEM = {
     action: { type: 'string', description: 'Hành động cụ thể của từng nhân vật, góc máy' },
     expression: { type: 'string', description: 'Biểu cảm khuôn mặt, cảm xúc' },
     characters: { type: 'array', items: { type: 'string' }, description: 'Tên các nhân vật xuất hiện, đúng tên đã cho' },
+    positions: {
+      type: 'array',
+      description: 'Vị trí của từng nhân vật xuất hiện, nhìn từ người xem',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Tên nhân vật, đúng tên đã cho' },
+          position: { type: 'string', enum: ['left', 'center', 'right'] },
+        },
+        required: ['name', 'position'],
+      },
+    },
     dialogues: {
       type: 'array',
       items: {
@@ -90,7 +103,7 @@ const FRAME_ITEM = {
       },
     },
   },
-  required: ['scene', 'action', 'expression', 'characters', 'dialogues'],
+  required: ['scene', 'action', 'expression', 'characters', 'positions', 'dialogues'],
 };
 
 const FRAMES_SCHEMA = {
@@ -193,6 +206,34 @@ const toUnit = (v) => Math.min(1, Math.max(0, Number(v) / 1000 || 0));
 const EXT_BY_MIME = { 'image/jpeg': 'jpg', 'image/webp': 'webp' };
 const extOf = (mimeType) => EXT_BY_MIME[mimeType] || 'png';
 
+const TRAITS_SCHEMA = {
+  type: 'object',
+  properties: {
+    traits: { type: 'string', description: 'Đặc điểm nhìn thấy được, ngăn cách bằng dấu phẩy' },
+  },
+  required: ['traits'],
+};
+
+/** Reads a character's reference images once and lists the visible traits that tell them apart from others. */
+export async function describeCharacter({ settings, name, description, images, signal }) {
+  const files = images.slice(0, 3).map((img, i) => ({ name: `character-${i + 1}.${extOf(img.mimeType)}`, data: Buffer.from(img.data, 'base64') }));
+  const prompt = `Mở và xem các file ảnh mẫu của một nhân vật truyện tranh: ${files.map((f) => f.name).join(', ')}.
+Tên nhân vật:
+${dataBlock('tên', name || '(chưa đặt tên)')}
+Mô tả người dùng đã viết:
+${dataBlock('mô tả', description || '(chưa có)')}
+
+Nhiệm vụ: liệt kê 5–8 đặc điểm NHÌN THẤY ĐƯỢC giúp phân biệt nhân vật này với người khác trong cùng khung: tuổi và dáng người, kiểu và màu tóc, màu da, kính hoặc phụ kiện, trang phục kèm màu cụ thể.
+Viết tiếng Việt, mỗi đặc điểm vài từ, ngăn cách bằng dấu phẩy, tổng tối đa khoảng 40 từ. Không mô tả biểu cảm, tư thế hay nền ảnh.`;
+  const data = await generateJson(settings, prompt, TRAITS_SCHEMA, {
+    files,
+    allowRead: `Ngoại lệ duy nhất: được phép đọc các file ${files.map((f) => f.name).join(', ')}.`,
+    timeoutSec: 180,
+    signal,
+  });
+  return { traits: String(data.traits || '').trim() };
+}
+
 /**
  * Looks at a generated frame and returns, per dialogue line, where the speaker is and where the bubble fits,
  * plus the line reworded to match the picture. Coordinates are normalized (0..1) to the image.
@@ -274,13 +315,13 @@ const ratioOf = (aspectRatio) => {
 };
 
 /**
- * @param {{settings, prompt: string, refs: {label, mimeType, data}[], aspectRatio?: string, signal?: AbortSignal}} args
+ * @param {{settings, prompt: string, refs: {name?, label, mimeType, data}[], aspectRatio?: string, signal?: AbortSignal}} args
  * @returns {Promise<{buffer: Buffer, mimeType: string}>}
  */
 export async function generateImage({ settings, prompt, refs, aspectRatio, signal }) {
   const ratio = aspectRatio || '9:16';
   // Each reference image becomes a file in the job dir, listed with a label so the model knows who/what it shows.
-  const files = refs.map((ref, i) => ({ name: `ref-${i + 1}.${extOf(ref.mimeType)}`, data: Buffer.from(ref.data, 'base64') }));
+  const files = refs.map((ref, i) => ({ name: ref.name || `ref-${i + 1}.${extOf(ref.mimeType)}`, data: Buffer.from(ref.data, 'base64') }));
   const refLines = files.map((f, i) => `${f.name}: ${refs[i].label}`).join('\n');
   const instructions = `Tạo đúng MỘT ảnh khung truyện tranh, tỉ lệ khung hình ${ratio}.
 Ảnh tham chiếu trong thư mục hiện tại (dùng để giữ đúng nhân vật và phong cách):

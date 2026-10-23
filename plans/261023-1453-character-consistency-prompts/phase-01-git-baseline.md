@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Khởi tạo git và commit trạng thái hiện tại"
-status: pending
+status: completed
 depends_on: []
 ---
 

@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Đo trước/sau trên 6 khung nhiều người"
-status: pending
+status: completed
 depends_on: [4]
 ---
 

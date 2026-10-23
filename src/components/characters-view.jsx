@@ -7,10 +7,11 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 export default function CharactersView({ characters, setCharacters }) {
   const status = useAutosave(characters, api.saveCharacters);
   const [error, setError] = useState('');
+  const [extracting, setExtracting] = useState({});
 
   const update = (id, patch) => setCharacters((list) => list.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const add = () =>
-    setCharacters((list) => [...list, { id: uid(), name: `Nhân vật ${list.length + 1}`, description: '', images: [] }]);
+    setCharacters((list) => [...list, { id: uid(), name: `Nhân vật ${list.length + 1}`, description: '', traits: '', images: [] }]);
   const remove = (c) => {
     if (confirm(`Xoá nhân vật "${c.name}"?`)) setCharacters((list) => list.filter((x) => x.id !== c.id));
   };
@@ -21,8 +22,27 @@ export default function CharactersView({ characters, setCharacters }) {
       const files = [];
       for (const f of fileList) files.push((await api.uploadCharacterImage(f)).file);
       setCharacters((list) => list.map((c) => (c.id === id ? { ...c, images: [...(c.images || []), ...files] } : c)));
+      // React may run the updater above later, so build the extraction input from the current props instead.
+      const current = characters.find((c) => c.id === id);
+      if (current && !current.traits?.trim()) extractTraits({ ...current, images: [...(current.images || []), ...files] }, { onlyIfEmpty: true });
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  // One agy vision call per character, only when asked or when traits are still empty; never during frame drawing.
+  async function extractTraits(character, { onlyIfEmpty = false } = {}) {
+    if (!character.images?.length) return;
+    setError('');
+    setExtracting((m) => ({ ...m, [character.id]: true }));
+    try {
+      const { traits } = await api.extractCharacterTraits(character);
+      // An automatic run must not overwrite traits the user typed while agy was reading the images.
+      setCharacters((list) => list.map((c) => (c.id === character.id && (!onlyIfEmpty || !c.traits?.trim()) ? { ...c, traits } : c)));
+    } catch (err) {
+      setError(`Không rút được đặc điểm của ${character.name}: ${err.message}`);
+    } finally {
+      setExtracting((m) => ({ ...m, [character.id]: false }));
     }
   }
 
@@ -54,6 +74,20 @@ export default function CharactersView({ characters, setCharacters }) {
               onChange={(e) => update(c.id, { description: e.target.value })}
               placeholder="VD: cậu bé 13 tuổi, tóc đen rối xù, mắt to nâu, áo polo vàng mù tạt, tạp dề vải xanh rêu, quần jean xanh, giày vải đỏ"
             />
+            <div className="stack tight">
+              <div className="row between">
+                <span className="small">Đặc điểm nhận dạng (AI rút từ ảnh mẫu, sửa được)</span>
+                <button disabled={!c.images?.length || extracting[c.id]} onClick={() => extractTraits(c)}>
+                  {extracting[c.id] ? 'Đang rút…' : 'Rút lại'}
+                </button>
+              </div>
+              <textarea
+                rows={2}
+                value={c.traits || ''}
+                onChange={(e) => update(c.id, { traits: e.target.value })}
+                placeholder="VD: tóc đen rối xù, áo polo vàng mù tạt, tạp dề xanh rêu, giày vải đỏ"
+              />
+            </div>
             <div className="thumbs">
               {(c.images || []).map((file) => (
                 <div key={file} className="thumb-wrap">

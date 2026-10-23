@@ -26,6 +26,8 @@ export const api = {
   listCharacters: () => request('GET', '/api/characters'),
   saveCharacters: (list) => request('PUT', '/api/characters', list),
   uploadCharacterImage: (file) => uploadFile('/api/characters/images', file),
+  extractCharacterTraits: (character, signal) =>
+    request('POST', '/api/characters/traits', { name: character.name, description: character.description, images: character.images || [] }, signal),
 
   listProjects: () => request('GET', '/api/projects'),
   createProject: (data) => request('POST', '/api/projects', data),
