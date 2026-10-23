@@ -1,0 +1,1 @@
+- [Executor plan pitfalls](project-executor-plan-pitfalls.md) — Windows/Git Bash/agy gotchas to check first when reviewing handover plans in this repo
