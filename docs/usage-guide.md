@@ -39,9 +39,11 @@ Cần cài **agy CLI** và đăng nhập trước (`agy --version` chạy đư�
 
 ## Quy trình thủ công
 
+Thanh bước phía trên đánh dấu ✓ cho bước đã xong.
+
 1. **Nhân vật**: tên + mô tả cố định (tóc, áo, màu sắc…) + 1–3 ảnh tham chiếu rõ mặt. Sau khi thêm ảnh mẫu, AI đọc ảnh một lần và điền ô **Đặc điểm nhận dạng** (tóc, kính, trang phục kèm màu…). Sửa tay được; bấm **Rút lại** để AI đọc lại. Đặc điểm này giúp AI vẽ không trộn người này với người kia trong khung có nhiều nhân vật.
-2. **1. Kịch bản**: thiết lập truyện, "+ Thêm ảnh" cho từng ảnh, nhập ý tưởng, chọn bố cục, bấm "AI viết N khung" (hoặc viết cho tất cả ảnh chưa có nội dung). Sửa từng khung.
-3. **2. Prompt & ảnh**: prompt tự ghép từ phong cách + ý tưởng ảnh + mô tả nhân vật + khung (sửa tay được). Tạo từng khung hoặc hàng loạt; lịch sử các lần tạo được giữ để chọn. Có thể tải ảnh tự làm lên. Kịch bản AI viết ghi sẵn ai đứng trái, giữa, phải. Khung đã vẽ trước bản này vẫn giữ prompt cũ; bấm **Tạo lại prompt từ kịch bản** ở bước 2 để dùng cách ghép prompt mới.
+2. **1. Kịch bản**: thiết lập truyện, "+ Thêm ảnh" cho từng ảnh, nhập ý tưởng, chọn bố cục, bấm "AI viết N khung" (hoặc viết cho tất cả ảnh chưa có nội dung). Sửa từng khung. Mỗi khung hiện dạng thẻ tóm tắt; bấm **Sửa chi tiết** để mở các ô bối cảnh, hành động, biểu cảm và lời thoại.
+3. **2. Prompt & ảnh**: prompt tự ghép từ phong cách + ý tưởng ảnh + mô tả nhân vật + khung (sửa tay được). Tạo từng khung hoặc hàng loạt; lịch sử các lần tạo được giữ để chọn. Có thể tải ảnh tự làm lên. Prompt của từng khung được thu gọn; bấm **Prompt** để xem hoặc sửa, và **Tạo lại prompt từ kịch bản** nằm ngay trong đó. Kịch bản AI viết ghi sẵn ai đứng trái, giữa, phải. Khung đã vẽ trước bản này vẫn giữ prompt cũ; bấm **Tạo lại prompt từ kịch bản** ở bước 2 để dùng cách ghép prompt mới.
 4. **3. Lời thoại & ghép**: chọn ảnh; bóng thoại tự đặt từ lời thoại; kéo thân để di chuyển, chấm xanh để chỉnh đuôi, ô vuông để đổi độ rộng. Ảnh nhiều khung được ghép có viền; ảnh 1 khung giữ tràn ảnh.
 5. **4. Duyệt & đăng**: lướt toàn bộ ảnh như carousel (phím ← →), rồi:
    - đặt trạng thái Nháp / Đã duyệt / Đã đăng (hiện ở danh sách truyện);
