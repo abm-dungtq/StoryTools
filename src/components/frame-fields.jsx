@@ -7,7 +7,7 @@ export default function FrameFields({ frame, title, cast, updateFrame }) {
   const setDialogues = (fn) => updateFrame(frame.id, (f) => ({ dialogues: fn(f.dialogues), bubbles: null }));
 
   return (
-    <div className="frame-box stack">
+    <div className="stack">
       {title && <strong className="small">{title}</strong>}
       <div className="fields-grid">
         <label>

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
 import { pendingFrames } from '../hooks/use-story-automation.js';
 import { LAYOUTS, PAGE_SIZES, framesPerLayout, getLayout } from '../lib/layouts.js';
@@ -26,6 +26,8 @@ export default function ScriptStep({
   const [slideCount, setSlideCount] = useState(5);
   const [framesPerSlide, setFramesPerSlide] = useState('auto');
   const [pauseForReview, setPauseForReview] = useState(false);
+  // Frame ids whose full edit fields are shown; frames without content are always open.
+  const [expanded, setExpanded] = useState(() => new Set());
   // Async calls read the latest project through this ref instead of a stale closure.
   const projectRef = useRef(project);
   projectRef.current = project;
@@ -36,6 +38,20 @@ export default function ScriptStep({
   const missingImages = pendingFrames(project).filter((e) => !e.frame.selectedImage).length;
   const pending = pendingFrames(project).length;
   const anyBusy = automation.running || batchRunning;
+
+  // Keep a frame open once it was shown empty, so typing into it does not collapse it.
+  useEffect(() => {
+    const empty = project.slides.flatMap((s) => s.frames).filter((f) => !hasFrameContent(f)).map((f) => f.id);
+    if (empty.length) setExpanded((s) => (empty.every((id) => s.has(id)) ? s : new Set([...s, ...empty])));
+  }, [project.slides]);
+
+  const toggleFrame = (id) =>
+    setExpanded((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   function startAutomation() {
     if (project.slides.some((s) => s.frames.some(hasFrameContent)) && !confirm('Thay toàn bộ các ảnh hiện có bằng truyện mới?')) return;
@@ -110,41 +126,7 @@ export default function ScriptStep({
 
   return (
     <div className="stack">
-      <section className="card stack">
-        <h3>Thiết lập truyện</h3>
-        <label className="inline">
-          Khổ ảnh
-          <select value={project.orientation} disabled={anyBusy} onChange={(e) => update((p) => switchOrientation(p, e.target.value))}>
-            {Object.entries(PAGE_SIZES).map(([k, v]) => (
-              <option key={k} value={k}>{v.label}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Phong cách vẽ (chèn vào mọi prompt)
-          <textarea rows={2} value={project.style} onChange={(e) => update({ style: e.target.value })} />
-        </label>
-        <div>
-          <div className="label">Nhân vật trong truyện</div>
-          {characters.length === 0 ? (
-            <p className="muted small">Chưa có nhân vật, vào tab Nhân vật để tạo.</p>
-          ) : (
-            <div className="chips">
-              {characters.map((c) => (
-                <button
-                  key={c.id}
-                  className={`chip ${project.characterIds.includes(c.id) ? 'active' : ''}`}
-                  onClick={() => update((p) => ({ characterIds: toggle(p.characterIds, c.id) }))}
-                >
-                  {c.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="card stack">
+      <section className="card stack hero">
         <h3>🤖 Tự động tạo truyện</h3>
         <label>
           Cốt truyện
@@ -173,10 +155,10 @@ export default function ScriptStep({
             <input type="checkbox" checked={pauseForReview} onChange={(e) => setPauseForReview(e.target.checked)} />
             Dừng lại để duyệt kịch bản trước khi vẽ
           </label>
+          <ImageModelSelect value={imageModel} frames={plannedFrames} disabled={anyBusy} onChange={changeImageModel} />
         </div>
-        <ImageModelSelect value={imageModel} frames={plannedFrames} disabled={anyBusy} onChange={changeImageModel} />
         <div className="row wrap">
-          <button className="primary" disabled={anyBusy || !project.idea.trim()} onClick={startAutomation}>
+          <button className="primary large" disabled={anyBusy || !project.idea.trim()} onClick={startAutomation}>
             {pauseForReview ? '✨ Viết kịch bản' : '🤖 Tự động tạo cả truyện'}
           </button>
           {pending > 0 && (
@@ -199,6 +181,44 @@ export default function ScriptStep({
           AI viết cả truyện, vẽ từng khung, rồi nhìn ảnh để đặt bóng thoại. Xong sẽ chuyển sang bước 3: nhấp đúp bóng thoại để sửa chữ, kéo để đổi
           vị trí. Sau đó bước 4 để duyệt và đăng.
         </p>
+      </section>
+
+      <section className="card stack">
+        <h3>Thiết lập truyện</h3>
+        <div className="setup-grid">
+          <div className="stack">
+            <label className="inline">
+              Khổ ảnh
+              <select value={project.orientation} disabled={anyBusy} onChange={(e) => update((p) => switchOrientation(p, e.target.value))}>
+                {Object.entries(PAGE_SIZES).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+            </label>
+            <div className="stack tight">
+              <div className="label">Nhân vật trong truyện</div>
+              {characters.length === 0 ? (
+                <p className="muted small">Chưa có nhân vật, vào tab Nhân vật để tạo.</p>
+              ) : (
+                <div className="chips">
+                  {characters.map((c) => (
+                    <button
+                      key={c.id}
+                      className={`chip ${project.characterIds.includes(c.id) ? 'active' : ''}`}
+                      onClick={() => update((p) => ({ characterIds: toggle(p.characterIds, c.id) }))}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <label>
+            Phong cách vẽ (chèn vào mọi prompt)
+            <textarea rows={2} value={project.style} onChange={(e) => update({ style: e.target.value })} />
+          </label>
+        </div>
       </section>
 
       {project.slides.map((slide, i) => {
@@ -226,7 +246,7 @@ export default function ScriptStep({
               </div>
             </div>
             <textarea
-              rows={3}
+              rows={2}
               value={slide.idea}
               onChange={(e) => updateSlide(slide.id, { idea: e.target.value })}
               placeholder={
@@ -241,9 +261,38 @@ export default function ScriptStep({
               </button>
               {errors[slide.id] && <span className="error small">{errors[slide.id]}</span>}
             </div>
-            {slide.frames.map((frame, j) => (
-              <FrameFields key={frame.id} frame={frame} title={n > 1 ? `Khung ${j + 1}` : null} cast={cast} updateFrame={updateFrame} />
-            ))}
+            <div className="frame-grid">
+              {slide.frames.map((frame, j) => {
+                const hasContent = hasFrameContent(frame);
+                const isOpen = expanded.has(frame.id) || !hasContent;
+                return (
+                  <div key={frame.id} className={`frame-card ${isOpen ? 'open' : ''}`}>
+                    <div className="row between">
+                      <strong className="small">{n > 1 ? `Khung ${j + 1}` : 'Khung'}</strong>
+                      {hasContent && (
+                        <button data-expand aria-expanded={String(isOpen)} onClick={() => toggleFrame(frame.id)}>
+                          {isOpen ? 'Thu gọn' : 'Sửa chi tiết'}
+                        </button>
+                      )}
+                    </div>
+                    {isOpen ? (
+                      <FrameFields frame={frame} cast={cast} updateFrame={updateFrame} />
+                    ) : (
+                      <div className="frame-summary small">
+                        <p className="clamp-2">{frame.scene || frame.action || '—'}</p>
+                        <p className="muted">
+                          {frame.characterIds
+                            .map((id) => cast.find((c) => c.id === id)?.name)
+                            .filter(Boolean)
+                            .join(', ') || 'Không có nhân vật'}
+                        </p>
+                        {frame.dialogues[0]?.text && <p className="clamp-2">“{frame.dialogues[0].text}”</p>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </section>
         );
       })}
