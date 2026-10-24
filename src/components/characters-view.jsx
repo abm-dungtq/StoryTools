@@ -61,33 +61,9 @@ export default function CharactersView({ characters, setCharacters }) {
       {error && <p className="error">{error}</p>}
       {characters.length === 0 && <p className="muted">Chưa có nhân vật nào.</p>}
 
-      <div className="grid">
+      <div className="character-grid">
         {characters.map((c) => (
-          <div key={c.id} className="card stack">
-            <div className="row">
-              <input className="grow" value={c.name} onChange={(e) => update(c.id, { name: e.target.value })} placeholder="Tên" />
-              <button className="danger" onClick={() => remove(c)}>Xoá</button>
-            </div>
-            <textarea
-              rows={4}
-              value={c.description}
-              onChange={(e) => update(c.id, { description: e.target.value })}
-              placeholder="VD: cậu bé 13 tuổi, tóc đen rối xù, mắt to nâu, áo polo vàng mù tạt, tạp dề vải xanh rêu, quần jean xanh, giày vải đỏ"
-            />
-            <div className="stack tight">
-              <div className="row between">
-                <span className="small">Đặc điểm nhận dạng (AI rút từ ảnh mẫu, sửa được)</span>
-                <button disabled={!c.images?.length || extracting[c.id]} onClick={() => extractTraits(c)}>
-                  {extracting[c.id] ? 'Đang rút…' : 'Rút lại'}
-                </button>
-              </div>
-              <textarea
-                rows={2}
-                value={c.traits || ''}
-                onChange={(e) => update(c.id, { traits: e.target.value })}
-                placeholder="VD: tóc đen rối xù, áo polo vàng mù tạt, tạp dề xanh rêu, giày vải đỏ"
-              />
-            </div>
+          <div key={c.id} className="card character-card">
             <div className="thumbs">
               {(c.images || []).map((file) => (
                 <div key={file} className="thumb-wrap">
@@ -114,6 +90,35 @@ export default function CharactersView({ characters, setCharacters }) {
                   }}
                 />
               </label>
+            </div>
+            <div className="stack">
+              <div className="row">
+                <input className="grow" value={c.name} onChange={(e) => update(c.id, { name: e.target.value })} placeholder="Tên" />
+                <button className="danger" onClick={() => remove(c)}>Xoá</button>
+              </div>
+              <div className="stack tight">
+                <span className="label">Mô tả</span>
+                <textarea
+                  rows={5}
+                  value={c.description}
+                  onChange={(e) => update(c.id, { description: e.target.value })}
+                  placeholder="VD: cậu bé 13 tuổi, tóc đen rối xù, mắt to nâu, áo polo vàng mù tạt, tạp dề vải xanh rêu, quần jean xanh, giày vải đỏ"
+                />
+              </div>
+              <div className="stack tight">
+                <div className="row between">
+                  <span className="small">Đặc điểm nhận dạng (AI rút từ ảnh mẫu, sửa được)</span>
+                  <button disabled={!c.images?.length || extracting[c.id]} onClick={() => extractTraits(c)}>
+                    {extracting[c.id] ? 'Đang rút…' : 'Rút lại'}
+                  </button>
+                </div>
+                <textarea
+                  rows={3}
+                  value={c.traits || ''}
+                  onChange={(e) => update(c.id, { traits: e.target.value })}
+                  placeholder="VD: tóc đen rối xù, áo polo vàng mù tạt, tạp dề xanh rêu, giày vải đỏ"
+                />
+              </div>
             </div>
           </div>
         ))}
