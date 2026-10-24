@@ -29,6 +29,7 @@
 body { margin: 0; }
 h2, h3 { margin: 0; }
 h3 { font-size: 1rem; }
+h4 { margin: 0; font-size: 0.9rem; }
 code, .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.85em; }
 
 .app { min-height: 100vh; }
@@ -97,6 +98,13 @@ button.link { background: none; border: none; justify-content: flex-start; white
 .seg { background: var(--card); border-color: var(--border); color: var(--muted); font-weight: 500; }
 .seg:hover { background: var(--surface-2); color: var(--text); }
 .seg.active, .seg.active:hover { background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-weight: 600; }
+/* Joined segments read as one multi-choice switch. */
+.seg-group { display: inline-flex; flex-wrap: wrap; padding: 1px 0 0 1px; }
+.seg-group .seg { border-radius: 0; margin: -1px 0 0 -1px; }
+.seg-group .seg:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.seg-group .seg:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.seg-group .seg:only-child { border-radius: var(--radius); }
+.seg-group .seg.active, .seg-group .seg:focus-visible { position: relative; z-index: 1; }
 
 /* Four-step editor navigation; finished steps show a check mark. */
 .stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
@@ -201,11 +209,22 @@ textarea.mono { width: 100%; background: var(--bg); font-size: 0.8rem; }
 .dot.active { background: var(--text); }
 .strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
 .strip-item { flex-direction: column; gap: 4px; padding: 6px; border: 2px solid transparent; background: var(--card); }
-.strip-item.active { border-color: var(--primary); }
+.strip-item.active { border-color: var(--accent); }
 .strip-item img { height: 120px; width: auto; border-radius: 4px; }
 
 .publish-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; }
 .checklist { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 2px; }
+/* Publish checklist as rounded status pills. */
+.status-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.status-list li {
+  font-size: 0.85rem; font-weight: 500; padding: 3px 12px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+}
+.status-list li.ok { color: var(--success); border-color: var(--success); }
+.status-list li.warning { color: var(--warning); border-color: var(--warning); }
+.publish-howto summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.publish-howto summary:hover { color: var(--text); }
+.publish-howto[open] summary { margin-bottom: 6px; }
 /* QR stays black on white so phones can scan it. */
 .qr { width: 220px; height: 220px; background: #fff; padding: 8px; border-radius: var(--radius); border: 1px solid var(--border); image-rendering: pixelated; }
 .break { word-break: break-all; }
@@ -222,7 +241,11 @@ textarea.mono { width: 100%; background: var(--bg); font-size: 0.8rem; }
 }
 .progress-pill { background: var(--surface-2); border: 1px solid var(--warning); border-radius: 10px; padding: 8px 12px; }
 
-.compose-canvas-wrap { position: relative; display: flex; justify-content: center; background: var(--surface-2); border-radius: 12px; padding: 12px; }
+/* Outline is an inset shadow, not a border, so the bubble editor overlay stays aligned with the canvas. */
+.compose-canvas-wrap {
+  position: relative; display: flex; justify-content: center; background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--border); border-radius: 12px; padding: 12px;
+}
 .compose-canvas { touch-action: none; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2); cursor: pointer; }
 .compose-canvas.portrait { height: calc(100vh - 120px); max-width: 100%; }
 .compose-canvas.landscape { width: 100%; }

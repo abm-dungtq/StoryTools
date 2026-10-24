@@ -227,7 +227,7 @@ export default function ComposeStep({ project, characters, automation, updateFra
       <aside className="stack compose-side">
         <section className="card stack">
           <div className="label">Chọn ảnh</div>
-          <div className="row wrap">
+          <div className="seg-group">
             {project.slides.map((s, i) => (
               <button
                 key={s.id}
@@ -282,34 +282,36 @@ export default function ComposeStep({ project, characters, automation, updateFra
             </p>
           )}
           {slide.frames.map((frame, i) => (
-            <div key={frame.id} className="row wrap">
-              <span className="small grow nowrap">{multi ? `Khung ${i + 1}` : 'Ảnh này'}</span>
-              <button
-                disabled={!frame.selectedImage || aiBusy === frame.id || automation.running}
-                title="AI xem ảnh để đặt bóng thoại vào vùng trống, đuôi chỉ về người nói"
-                onClick={() => aiPlace(frame, i)}
-              >
-                {aiBusy === frame.id ? 'AI đang xem…' : '✨ AI đặt thoại'}
-              </button>
-              <button
-                onClick={() => {
-                  const bubble = createBubble(multi ? 34 : 42);
-                  updateFrame(frame.id, (f) => ({ bubbles: [...(f.bubbles || []), bubble], bubblePlacementFailed: false }));
-                  setSelection({ frameId: frame.id, bubbleId: bubble.id });
-                }}
-              >
-                + Bóng
-              </button>
-              <button
-                onClick={() => {
-                  if (confirm('Đặt lại bóng thoại theo mẫu từ lời thoại trong kịch bản?')) {
-                    updateFrame(frame.id, { bubbles: placeBubbles(frame, i), bubblePlacementFailed: false });
-                    setSelection(null);
-                  }
-                }}
-              >
-                Đặt lại
-              </button>
+            <div key={frame.id} className="frame-card stack tight">
+              <strong className="small">{multi ? `Khung ${i + 1}` : 'Ảnh này'}</strong>
+              <div className="row wrap">
+                <button
+                  disabled={!frame.selectedImage || aiBusy === frame.id || automation.running}
+                  title="AI xem ảnh để đặt bóng thoại vào vùng trống, đuôi chỉ về người nói"
+                  onClick={() => aiPlace(frame, i)}
+                >
+                  {aiBusy === frame.id ? 'AI đang xem…' : '✨ AI đặt thoại'}
+                </button>
+                <button
+                  onClick={() => {
+                    const bubble = createBubble(multi ? 34 : 42);
+                    updateFrame(frame.id, (f) => ({ bubbles: [...(f.bubbles || []), bubble], bubblePlacementFailed: false }));
+                    setSelection({ frameId: frame.id, bubbleId: bubble.id });
+                  }}
+                >
+                  + Bóng
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm('Đặt lại bóng thoại theo mẫu từ lời thoại trong kịch bản?')) {
+                      updateFrame(frame.id, { bubbles: placeBubbles(frame, i), bubblePlacementFailed: false });
+                      setSelection(null);
+                    }
+                  }}
+                >
+                  Đặt lại
+                </button>
+              </div>
             </div>
           ))}
         </section>

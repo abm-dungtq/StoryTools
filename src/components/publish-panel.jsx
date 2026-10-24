@@ -92,7 +92,7 @@ export default function PublishPanel({ project, update, blobs, missingFrames }) 
     <section className="card stack">
       <div className="row wrap between">
         <h3>Duyệt & đăng TikTok</h3>
-        <div className="row">
+        <div className="seg-group">
           {PUBLISH_STATUSES.map((s) => (
             <button key={s.id} className={`seg ${publish.status === s.id ? 'active' : ''}`} onClick={() => setStatus(s.id)}>
               {s.label}
@@ -101,21 +101,22 @@ export default function PublishPanel({ project, update, blobs, missingFrames }) 
         </div>
       </div>
 
-      <ul className="small checklist">
-        <li className={missingFrames ? 'warning' : ''}>
+      <ul className="status-list">
+        <li className={missingFrames ? 'warning' : 'ok'}>
           {missingFrames ? `Còn ${missingFrames} khung chưa có ảnh` : '✓ Tất cả khung đã có ảnh'}
         </li>
-        <li className={blobs.length > TIKTOK_MAX_PHOTOS ? 'warning' : ''}>
+        <li className={blobs.length > TIKTOK_MAX_PHOTOS ? 'warning' : 'ok'}>
           {blobs.length > TIKTOK_MAX_PHOTOS
             ? `TikTok chỉ cho tối đa ${TIKTOK_MAX_PHOTOS} ảnh mỗi bài (truyện đang có ${blobs.length})`
             : `✓ ${blobs.length} ảnh (TikTok tối đa ${TIKTOK_MAX_PHOTOS})`}
         </li>
-        <li className={text ? '' : 'warning'}>{text ? '✓ Đã có caption' : 'Chưa có caption'}</li>
-        {publish.postedAt && <li>Đã đăng lúc {new Date(publish.postedAt).toLocaleString('vi-VN')}</li>}
+        <li className={text ? 'ok' : 'warning'}>{text ? '✓ Đã có caption' : 'Chưa có caption'}</li>
+        {publish.postedAt && <li className="ok">Đã đăng lúc {new Date(publish.postedAt).toLocaleString('vi-VN')}</li>}
       </ul>
 
       <div className="publish-grid">
         <div className="stack">
+          <h4>Nội dung bài đăng</h4>
           {field('title', `Tiêu đề (${publish.title.length}/90)`, { maxLength: 90 })}
           <label>
             Caption
@@ -138,7 +139,7 @@ export default function PublishPanel({ project, update, blobs, missingFrames }) 
         </div>
 
         <div className="stack">
-          <div className="label">Đưa ảnh sang điện thoại</div>
+          <h4>Đưa lên điện thoại</h4>
           {sharingHere ? (
             <>
               <img className="qr" src={link.qr} alt="Mã QR" />
@@ -177,7 +178,7 @@ export default function PublishPanel({ project, update, blobs, missingFrames }) 
             </>
           )}
 
-          <div className="label">Hoặc tải về máy</div>
+          <h4>Tải về máy</h4>
           <div className="row wrap">
             <button disabled={Boolean(busy)} onClick={() => exportFiles(false)}>Tải PNG tất cả ảnh</button>
             <button disabled={Boolean(busy)} onClick={() => exportFiles(true)}>Xuất PDF</button>
@@ -186,13 +187,16 @@ export default function PublishPanel({ project, update, blobs, missingFrames }) 
       </div>
 
       {error && <p className="error small">{error}</p>}
-      <ol className="small muted checklist">
-        <li>Lưu ảnh vào điện thoại theo thứ tự 1 → {blobs.length}.</li>
-        <li>TikTok → + → Tải lên → chọn các ảnh theo đúng thứ tự.</li>
-        <li>Thêm âm thanh: tìm theo từ khoá gợi ý.</li>
-        <li>Dán tiêu đề và caption, rồi đăng.</li>
-        <li>Quay lại đây đánh dấu "Đã đăng".</li>
-      </ol>
+      <details className="publish-howto">
+        <summary>Cách đăng lên TikTok</summary>
+        <ol className="small muted checklist">
+          <li>Lưu ảnh vào điện thoại theo thứ tự 1 → {blobs.length}.</li>
+          <li>TikTok → + → Tải lên → chọn các ảnh theo đúng thứ tự.</li>
+          <li>Thêm âm thanh: tìm theo từ khoá gợi ý.</li>
+          <li>Dán tiêu đề và caption, rồi đăng.</li>
+          <li>Quay lại đây đánh dấu "Đã đăng".</li>
+        </ol>
+      </details>
     </section>
   );
 }
