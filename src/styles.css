@@ -88,6 +88,8 @@ button:hover, .button:hover { background: var(--border); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 button.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-weight: 600; }
 button.primary:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover); }
+/* A faded orange fill reads as brown and its label blurs; show disabled primaries as neutral instead. */
+button.primary:disabled { background: var(--surface-2); border-color: var(--border); color: var(--muted); opacity: 1; }
 button.danger { color: var(--danger); }
 button.link { background: none; border: none; justify-content: flex-start; white-space: normal; }
 .tab { background: transparent; border-color: transparent; }
@@ -137,7 +139,7 @@ button.link { background: none; border: none; justify-content: flex-start; white
 /* Story list: cover grid with drawing progress. */
 .list-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
 .create-form { flex: 0 1 560px; }
-.project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 .project-card { display: flex; flex-direction: column; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
 .project-open {
   flex-direction: column; align-items: stretch; gap: 8px; padding: 0; background: none; border: none;

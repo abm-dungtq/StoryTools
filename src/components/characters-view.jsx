@@ -107,13 +107,13 @@ export default function CharactersView({ characters, setCharacters }) {
               </div>
               <div className="stack tight">
                 <div className="row between">
-                  <span className="small">Đặc điểm nhận dạng (AI rút từ ảnh mẫu, sửa được)</span>
+                  <span className="label">Đặc điểm nhận dạng (AI rút từ ảnh mẫu, sửa được)</span>
                   <button disabled={!c.images?.length || extracting[c.id]} onClick={() => extractTraits(c)}>
                     {extracting[c.id] ? 'Đang rút…' : 'Rút lại'}
                   </button>
                 </div>
                 <textarea
-                  rows={3}
+                  rows={5}
                   value={c.traits || ''}
                   onChange={(e) => update(c.id, { traits: e.target.value })}
                   placeholder="VD: tóc đen rối xù, áo polo vàng mù tạt, tạp dề xanh rêu, giày vải đỏ"
