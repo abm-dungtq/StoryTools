@@ -10,6 +10,7 @@ export default function FramesStep({ project, characters, settings, automation, 
   const [busyIds, setBusyIds] = useState(() => new Set());
   const [errors, setErrors] = useState({});
   const [batch, setBatch] = useState(null);
+  const [openPrompts, setOpenPrompts] = useState(() => new Set());
   const stopRef = useRef(false);
   const controllerRef = useRef(null);
   // Leaving this step cancels a running batch instead of drawing frames nobody saves.
@@ -23,6 +24,14 @@ export default function FramesStep({ project, characters, settings, automation, 
       const next = new Set(s);
       if (on) next.add(id);
       else next.delete(id);
+      return next;
+    });
+
+  const togglePrompt = (id) =>
+    setOpenPrompts((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
 
@@ -99,10 +108,11 @@ export default function FramesStep({ project, characters, settings, automation, 
   if (!entries.length) return <p className="muted">Chưa có ảnh nào, quay lại bước Kịch bản.</p>;
   const missing = entries.filter((e) => !e.frame.selectedImage).length;
   const nameOf = (id) => characters.find((c) => c.id === id)?.name || '?';
+  const groups = project.slides.map((slide, s) => ({ slide, s, items: entries.filter((e) => e.s === s) })).filter((g) => g.items.length);
 
   return (
     <div className="stack">
-      <section className="card row wrap between">
+      <section className="card row wrap between toolbar">
         <div className="row wrap">
           <button onClick={fillAllPrompts}>Tạo prompt cho tất cả khung</button>
           {batch ? (
@@ -136,97 +146,97 @@ export default function FramesStep({ project, characters, settings, automation, 
         />
       </section>
 
-      {entries.map(({ slide, frame, s, f, frameCount, aspectRatio }) => {
-        const busy = busyIds.has(frame.id);
-        return (
-          <div key={frame.id} className="stack">
-            {f === 0 && (
-              <div className="slide-heading">
-                <h2>Ảnh {s + 1}</h2>
-                <span className="muted small">{getLayout(project.orientation, slide.layoutId).label}</span>
-                {slide.idea && <p className="small">{slide.idea}</p>}
-              </div>
-            )}
-            <section className="card panel-row">
-              <div className="stack">
-                <h3>
-                  {frameLabel(s, f, frameCount)} <span className="muted small">tỉ lệ {aspectRatio}</span>
-                </h3>
-                <p className="small">
-                  <b>Bối cảnh:</b> {frame.scene || '—'} <br />
-                  <b>Hành động:</b> {frame.action || '—'} <br />
-                  <b>Nhân vật:</b> {frame.characterIds.map(nameOf).join(', ') || '—'}
-                </p>
-                {frame.dialogues.length > 0 && (
-                  <ul className="small dialogue-list">
-                    {frame.dialogues.map((d, k) => (
-                      <li key={k}><b>{d.speakerId ? nameOf(d.speakerId) : '…'}:</b> {d.text}</li>
-                    ))}
-                  </ul>
-                )}
-                <label>
-                  Prompt
-                  <textarea
-                    rows={9}
-                    className="mono"
-                    value={frame.prompt || ''}
-                    placeholder={buildFramePrompt(project, slide, frame, characters)}
-                    onChange={(e) => updateFrame(frame.id, { prompt: e.target.value })}
-                  />
-                </label>
-                <div>
-                  <button onClick={() => updateFrame(frame.id, { prompt: buildFramePrompt(project, slide, frame, characters) })}>
-                    Tạo lại prompt từ kịch bản
-                  </button>
-                </div>
-              </div>
-
-              <div className="stack">
-                <div className="preview" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
-                  {frame.selectedImage ? (
-                    <img src={panelImageUrl(project.id, frame.selectedImage)} alt="" />
-                  ) : (
-                    <span className="muted">Chưa có ảnh</span>
-                  )}
-                  {busy && <div className="overlay">Đang tạo ảnh…</div>}
-                </div>
-                <div className="row wrap">
-                  <button className="primary" disabled={busy || automation.running} onClick={() => generate(frame.id)}>
-                    {frame.selectedImage ? 'Tạo lại' : 'Tạo ảnh'}
-                  </button>
-                  <label className="button">
-                    Tải ảnh lên
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      hidden
-                      onChange={(e) => {
-                        if (e.target.files[0]) uploadImage(frame.id, e.target.files[0]);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
-                </div>
-                {errors[frame.id] && <p className="error small">{errors[frame.id]}</p>}
-                {frame.images?.length > 1 && (
-                  <div className="thumbs">
-                    {frame.images.map((file) => (
-                      <img
-                        key={file}
-                        className={file === frame.selectedImage ? 'active' : ''}
-                        src={panelImageUrl(project.id, file)}
-                        title="Chọn ảnh này"
-                        alt=""
-                        onClick={() => updateFrame(frame.id, { selectedImage: file })}
+      {groups.map(({ slide, s, items }) => (
+        <section key={slide.id}className="stack">
+          <div className="slide-heading">
+            <h2>Ảnh {s + 1}</h2>
+            <span className="muted small">{getLayout(project.orientation, slide.layoutId).label}</span>
+            {slide.idea && <p className="small">{slide.idea}</p>}
+          </div>
+          <div className="frame-grid images">
+            {items.map(({ frame, f, frameCount, aspectRatio }) => {
+              const busy = busyIds.has(frame.id);
+              const open = openPrompts.has(frame.id);
+              return (
+                <div key={frame.id} className={`frame-card ${open ? 'prompt-open' : ''}`}>
+                  <div className="preview" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
+                    {frame.selectedImage ? (
+                      <img src={panelImageUrl(project.id, frame.selectedImage)} alt="" />
+                    ) : (
+                      <span className="muted">Chưa có ảnh</span>
+                    )}
+                    {busy && <div className="overlay">Đang tạo ảnh…</div>}
+                  </div>
+                  <h3>
+                    {frameLabel(s, f, frameCount)} <span className="muted small">tỉ lệ {aspectRatio}</span>
+                  </h3>
+                  <div className="row wrap">
+                    <button className="primary" disabled={busy || automation.running} onClick={() => generate(frame.id)}>
+                      {frame.selectedImage ? 'Tạo lại' : 'Tạo ảnh'}
+                    </button>
+                    <label className="button">
+                      Tải ảnh lên
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        hidden
+                        onChange={(e) => {
+                          if (e.target.files[0]) uploadImage(frame.id, e.target.files[0]);
+                          e.target.value = '';
+                        }}
                       />
+                    </label>
+                  </div>
+                  {errors[frame.id] && <p className="error small">{errors[frame.id]}</p>}
+                  {frame.images?.length > 1 && (
+                    <div className="thumbs">
+                      {frame.images.map((file) => (
+                        <img
+                          key={file}
+                          className={file === frame.selectedImage ? 'active' : ''}
+                          src={panelImageUrl(project.id, file)}
+                          title="Chọn ảnh này"
+                          alt=""
+                          onClick={() => updateFrame(frame.id, { selectedImage: file })}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <div className="frame-summary small">
+                    <p className="clamp-2">{frame.scene || frame.action || '—'}</p>
+                    <p className="muted">{frame.characterIds.map(nameOf).join(', ') || 'Không có nhân vật'}</p>
+                    {frame.dialogues.map((d, k) => (
+                      <p key={k}><b>{d.speakerId ? nameOf(d.speakerId) : '…'}:</b> {d.text}</p>
                     ))}
                   </div>
-                )}
-              </div>
-            </section>
+                  <div>
+                    <button data-expand aria-expanded={String(open)} onClick={() => togglePrompt(frame.id)}>
+                      {open ? 'Ẩn prompt' : 'Prompt'}
+                    </button>
+                  </div>
+                  {open && (
+                    <>
+                      <textarea
+                        rows={9}
+                        className="mono"
+                        aria-label="Prompt"
+                        value={frame.prompt || ''}
+                        placeholder={buildFramePrompt(project, slide, frame, characters)}
+                        onChange={(e) => updateFrame(frame.id, { prompt: e.target.value })}
+                      />
+                      <div>
+                        <button onClick={() => updateFrame(frame.id, { prompt: buildFramePrompt(project, slide, frame, characters) })}>
+                          Tạo lại prompt từ kịch bản
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
+        </section>
+      ))}
     </div>
   );
 }
