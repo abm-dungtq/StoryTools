@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { autosaveLabel, useAutosave } from '../hooks/use-autosave.js';
 import { useStoryAutomation } from '../hooks/use-story-automation.js';
 import { migrateProject } from '../lib/story-model.js';
+import { stepStatus } from '../lib/step-status.js';
 import ComposeStep from './compose-step.jsx';
 import FramesStep from './frames-step.jsx';
 import PreviewStep from './preview-step.jsx';
@@ -68,26 +69,33 @@ export default function ProjectEditor({ projectId, characters, settings, onSetti
 
   if (error) return <p className="error">{error}</p>;
   if (!project) return <p className="muted">Đang tải truyện…</p>;
+  const done = stepStatus(project);
 
   const stepProps = { project, characters, settings, automation, changeImageModel, update, updateSlide, updateFrame };
   const { progress } = automation;
 
   return (
     <div className="stack">
-      <div className="row wrap between">
-        <div className="row grow">
-          <button onClick={onBack}>← Danh sách</button>
-          <input className="title-input grow" value={project.title} onChange={(e) => update({ title: e.target.value })} />
-          <span className="muted small">{autosaveLabel(status)}</span>
-        </div>
-        <div className="steps">
-          {STEPS.map((s) => (
-            <button key={s.id} className={`tab ${step === s.id ? 'active' : ''}`} onClick={() => setStep(s.id)}>
-              {s.label}
-            </button>
-          ))}
-        </div>
+      <div className="row">
+        <button onClick={onBack}>← Danh sách</button>
+        <input className="title-input grow" value={project.title} onChange={(e) => update({ title: e.target.value })} />
+        <span className="muted small nowrap">{autosaveLabel(status)}</span>
       </div>
+      <nav className="stepper" aria-label="Các bước">
+        {STEPS.map((s) => (
+          <button
+            key={s.id}
+            data-step={s.id}
+            data-done={String(done[s.id])}
+            aria-current={step === s.id ? 'step' : undefined}
+            className={`step ${step === s.id ? 'active' : ''} ${done[s.id] ? 'done' : ''}`}
+            onClick={() => setStep(s.id)}
+          >
+            <span className="step-mark">{done[s.id] ? '✓' : s.label[0]}</span>
+            {s.label.slice(3)}
+          </button>
+        ))}
+      </nav>
 
       {progress && step !== 'script' && (
         <div className="progress-pill row wrap">

@@ -94,7 +94,7 @@ export default function PublishPanel({ project, update, blobs, missingFrames }) 
         <h3>Duyệt & đăng TikTok</h3>
         <div className="row">
           {PUBLISH_STATUSES.map((s) => (
-            <button key={s.id} className={`tab ${publish.status === s.id ? 'active' : ''}`} onClick={() => setStatus(s.id)}>
+            <button key={s.id} className={`seg ${publish.status === s.id ? 'active' : ''}`} onClick={() => setStatus(s.id)}>
               {s.label}
             </button>
           ))}

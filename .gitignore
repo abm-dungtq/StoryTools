@@ -4,3 +4,4 @@ data/
 .env
 .bench-base/
 plans/**/bench/results/
+plans/**/screens/

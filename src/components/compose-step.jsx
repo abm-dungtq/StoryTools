@@ -231,7 +231,7 @@ export default function ComposeStep({ project, characters, automation, updateFra
             {project.slides.map((s, i) => (
               <button
                 key={s.id}
-                className={`tab ${i === current ? 'active' : ''}`}
+                className={`seg ${i === current ? 'active' : ''}`}
                 onClick={() => {
                   setSlideIndex(i);
                   setSelection(null);

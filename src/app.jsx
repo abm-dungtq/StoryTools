@@ -33,9 +33,14 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <strong className="brand">📖 StoryTools</strong>
-        <nav>
+        <nav className="row">
           {TABS.map((t) => (
-            <button key={t.id} className={`tab ${tab === t.id && !projectId ? 'active' : ''}`} onClick={() => openTab(t.id)}>
+            <button
+              key={t.id}
+              className={`tab ${tab === t.id && !projectId ? 'active' : ''}`}
+              aria-current={tab === t.id && !projectId ? 'page' : undefined}
+              onClick={() => openTab(t.id)}
+            >
               {t.label}
             </button>
           ))}
