@@ -1,9 +1,15 @@
 // Screenshots every main screen of the running app through headless Chrome (CDP) and runs mechanical UI checks.
 // Usage (from the repo root, app running on 5173/5174):
 //   node plans/261023-1714-ui-redesign/capture-screens.mjs <outDir> [--checks] [--auto-run]
+//        [--story "<title>"] [--width <px>] [--base <url>] [--empty]
 // --checks   prints "CHECK <name> PASS|FAIL <detail>" lines and a final "CHECKS FAILED: <n>" line.
 // --auto-run also creates a throwaway story through the UI, runs "Tự động tạo cả truyện" (1 image, 1 frame),
 //            waits until it has an image and bubbles, prints "CHECK auto-run PASS|FAIL", then deletes that story.
+// --story    title of the finished test story to open (default "[Test] Minh và chú mèo dưới mưa").
+// --width    viewport width in px (default 1440); every screen also checks there is no horizontal page scroll.
+// --base     app URL (default http://127.0.0.1:5173/).
+// --empty    the app at --base has an empty data folder: only the list, characters and settings screens are
+//            captured and checked (empty-state texts included); story-dependent checks are skipped.
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -11,17 +17,31 @@ import { join } from 'node:path';
 import { computeCells, getLayout } from '../../src/lib/layouts.js';
 
 const args = process.argv.slice(2);
-const outDir = args.find((a) => !a.startsWith('--'));
+const VALUE_FLAGS = ['--story', '--width', '--base'];
+/** Value of `--name <value>`, or `fallback` when the flag is absent. */
+function argValue(name, fallback) {
+  const i = args.indexOf(name);
+  if (i < 0) return fallback;
+  const value = args[i + 1];
+  if (value === undefined || value.startsWith('--')) throw new Error(`${name} needs a value`);
+  return value;
+}
+const outDir = args.find((a, i) => !a.startsWith('--') && !VALUE_FLAGS.includes(args[i - 1]));
+if (!outDir) throw new Error('Usage: capture-screens.mjs <outDir> [--checks] [--story "<title>"] [--width <px>] [--base <url>] [--empty]');
 const runChecks = args.includes('--checks');
 const autoRun = args.includes('--auto-run');
-const BASE = 'http://127.0.0.1:5173/';
-const TEST_TITLE = '[Test] Minh và chú mèo dưới mưa';
+const emptyMode = args.includes('--empty');
+const BASE = new URL(argValue('--base', 'http://127.0.0.1:5173/')).href;
+const TEST_TITLE = argValue('--story', '[Test] Minh và chú mèo dưới mưa');
+const WIDTH = Number(argValue('--width', '1440'));
+if (!Number.isInteger(WIDTH) || WIDTH < 320 || WIDTH > 3840) throw new Error(`--width must be an integer between 320 and 3840`);
+if (emptyMode && autoRun) throw new Error('--auto-run cannot be combined with --empty');
 mkdirSync(outDir, { recursive: true });
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const PORT = 9333;
 const chrome = spawn(CHROME, [
-  '--headless=new', `--remote-debugging-port=${PORT}`, '--window-size=1440,1000', '--hide-scrollbars',
+  '--headless=new', `--remote-debugging-port=${PORT}`, `--window-size=${WIDTH},1000`, '--hide-scrollbars',
   `--user-data-dir=${join(tmpdir(), 'storytools-capture-profile')}`, 'about:blank',
 ], { stdio: 'ignore' });
 
@@ -108,6 +128,51 @@ async function expectContrast(screen) {
 
 const pageHeight = () => evaluate('document.documentElement.scrollHeight');
 
+/** The page must never scroll sideways at the current viewport width. */
+async function expectNoHScroll(screen) {
+  const m = await evaluate('({ scroll: document.scrollingElement.scrollWidth, inner: innerWidth })');
+  check(`no-hscroll-${screen}`, m.scroll <= m.inner, `scrollWidth=${m.scroll} innerWidth=${m.inner}`);
+}
+
+/**
+ * Presses Tab through the screen with real key events. Every focused element must show a focus indicator
+ * (outline or box-shadow) and sit outside hidden ancestors; the visiting order is only logged.
+ */
+async function checkFocus(screen, presses = 15) {
+  await evaluate('(() => { document.activeElement?.blur(); window.scrollTo(0, 0); return true; })()');
+  await sleep(200);
+  const visited = [];
+  const bad = [];
+  for (let i = 0; i < presses; i++) {
+    for (const type of ['rawKeyDown', 'keyUp']) {
+      await send('Input.dispatchKeyEvent', { type, key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 });
+    }
+    await sleep(150);
+    const f = await evaluate(`(() => {
+      const el = document.activeElement;
+      if (!el || el === document.body || el === document.documentElement) return null;
+      const cs = getComputedStyle(el);
+      const indicator = (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) || cs.boxShadow !== 'none';
+      const r = el.getBoundingClientRect();
+      let hidden = r.width === 0 || r.height === 0;
+      for (let e = el; e && !hidden; e = e.parentElement) {
+        const s = getComputedStyle(e);
+        hidden = e.hidden || s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0' || e.getAttribute('aria-hidden') === 'true';
+      }
+      const text = ['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName) ? el.value || el.placeholder : el.getAttribute('aria-label') || el.textContent;
+      return { tag: el.tagName.toLowerCase(), label: (text || '').trim().replace(/\\s+/g, ' ').slice(0, 28), indicator, hidden, y: Math.round(r.top + scrollY), x: Math.round(r.left) };
+    })()`);
+    if (!f) continue;
+    visited.push(f);
+    if (!f.indicator || f.hidden) bad.push(`${f.tag} "${f.label}"${f.indicator ? '' : ' no-indicator'}${f.hidden ? ' hidden' : ''}`);
+  }
+  check(`focus-visible-${screen}`, visited.length > 0 && bad.length === 0, visited.length ? `${visited.length} stops; ${bad.slice(0, 5).join(' ; ')}` : 'Tab never focused an element');
+  if (!runChecks) return;
+  // Order is informational: a stop clearly above the previous one counts as a backward jump.
+  const jumps = visited.filter((f, i) => i > 0 && f.y < visited[i - 1].y - 24).length;
+  console.log(`FOCUS-ORDER ${screen} ${jumps ? `${jumps} backward jump(s)` : 'top-to-bottom'}: ${visited.map((f) => `${f.tag}"${f.label}"@${f.y}`).join(' > ')}`);
+}
+
 /** Opens every collapsed frame card / prompt so label checks see their content. */
 const expandAll = () =>
   evaluate(`(() => { document.querySelectorAll('[data-expand]:not([aria-expanded="true"])').forEach((b) => b.click()); return true; })()`).then(() => sleep(800));
@@ -133,9 +198,19 @@ async function checkCompose(project) {
   const cell = computeCells(project.orientation, getLayout(project.orientation, slide.layoutId))[frameIndex];
   const bubble = slide.frames[frameIndex].bubbles[0];
   const pageW = project.orientation === 'landscape' ? 1920 : 1080;
-  const scale = geo.rect.w / pageW;
-  const x = geo.rect.x + (cell.x + bubble.cx * cell.w) * scale;
-  const y = geo.rect.y + (cell.y + bubble.cy * cell.h) * scale;
+  let rect = geo.rect;
+  const pointIn = (r) => {
+    const scale = r.w / pageW;
+    return { x: r.x + (cell.x + bubble.cx * cell.w) * scale, y: r.y + (cell.y + bubble.cy * cell.h) * scale };
+  };
+  // A stacked (narrow) layout can push the bubble below the fold; mouse events only land inside the viewport.
+  const viewH = await evaluate('innerHeight');
+  if (pointIn(rect).y < 120 || pointIn(rect).y > viewH - 40) {
+    await evaluate(`window.scrollBy(0, ${Math.round(pointIn(rect).y - viewH / 2)})`);
+    await sleep(400);
+    rect = await evaluate(`(() => { const r = document.querySelector('canvas.compose-canvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; })()`);
+  }
+  const { x, y } = pointIn(rect);
   for (const type of ['mousePressed', 'mouseReleased']) {
     await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
   }
@@ -209,55 +284,77 @@ async function runAutomationThroughUi() {
 
 try {
   await send('Page.enable');
-  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await send('Emulation.setDeviceMetricsOverride', { width: WIDTH, height: 1000, deviceScaleFactor: 1, mobile: false });
+  // Headless pages are not focused by default; keyboard focus (and :focus-visible) needs emulated focus.
+  await send('Emulation.setFocusEmulationEnabled', { enabled: true });
   await send('Page.navigate', { url: BASE });
   await sleep(3000);
-  const summary = (await api('/api/projects')).find((p) => p.title === TEST_TITLE);
-  if (!summary) throw new Error(`Test story "${TEST_TITLE}" not found`);
-  const project = await api(`/api/projects/${summary.id}`);
+  let project = null;
+  if (emptyMode) {
+    const [stories, characters] = await Promise.all([api('/api/projects'), api('/api/characters')]);
+    if (stories.length || characters.length) throw new Error(`--empty expects no stories and no characters at ${BASE} (found ${stories.length}/${characters.length})`);
+  } else {
+    const summary = (await api('/api/projects')).find((p) => p.title === TEST_TITLE);
+    if (!summary) throw new Error(`Test story "${TEST_TITLE}" not found`);
+    project = await api(`/api/projects/${summary.id}`);
+  }
 
   await shot('01-project-list');
-  await expectLabels('list', ['Tạo truyện', 'Xoá', TEST_TITLE]);
+  await expectLabels('list', emptyMode ? ['Tạo truyện', 'Chưa có truyện nào'] : ['Tạo truyện', 'Xoá', TEST_TITLE]);
   await expectContrast('list');
+  await expectNoHScroll('list');
+  await checkFocus('list');
 
   await click('Nhân vật');
   await shot('02-characters');
-  await expectLabels('characters', ['Thêm nhân vật', 'Rút lại', 'Đặc điểm nhận dạng']);
+  await expectLabels('characters', emptyMode ? ['Thêm nhân vật', 'Chưa có nhân vật nào'] : ['Thêm nhân vật', 'Rút lại', 'Đặc điểm nhận dạng']);
   await expectContrast('characters');
+  await expectNoHScroll('characters');
 
   await click('Cài đặt');
   await shot('03-settings');
   await expectLabels('settings', ['Lưu', 'Model viết kịch bản']);
   await expectContrast('settings');
+  await expectNoHScroll('settings');
 
-  await click('Truyện');
-  await click(TEST_TITLE, 'button, a, [role="button"], [data-project]');
-  await shot('04-step-script');
-  check('height-script', (await pageHeight()) <= 1600, `${await pageHeight()}px (limit 1600)`);
-  await checkStepper();
-  await expandAll();
-  await expectLabels('script', ['Thiết lập truyện', 'Cốt truyện', 'Tự động tạo cả truyện', 'AI viết', 'Thêm ảnh thủ công', 'Bối cảnh', 'Hành động', 'Biểu cảm', 'Lời thoại']);
-  await expectContrast('script');
+  if (!emptyMode) {
+    await click('Truyện');
+    await click(TEST_TITLE, 'button, a, [role="button"], [data-project]');
+    await shot('04-step-script');
+    // The height budgets were set for a desktop window; narrower windows stack columns and grow taller by design.
+    if (WIDTH >= 1200) check('height-script', (await pageHeight()) <= 1600, `${await pageHeight()}px (limit 1600)`);
+    else console.log(`INFO height-script ${await pageHeight()}px (limit applies from 1200px wide)`);
+    await checkStepper();
+    await expectNoHScroll('script');
+    await checkFocus('script');
+    await expandAll();
+    await expectLabels('script', ['Thiết lập truyện', 'Cốt truyện', 'Tự động tạo cả truyện', 'AI viết', 'Thêm ảnh thủ công', 'Bối cảnh', 'Hành động', 'Biểu cảm', 'Lời thoại']);
+    await expectContrast('script');
 
-  await click('Prompt & ảnh');
-  await shot('05-step-frames');
-  check('height-frames', (await pageHeight()) <= 2000, `${await pageHeight()}px (limit 2000)`);
-  await expectLabels('frames-collapsed', ['Tạo prompt cho tất cả khung', 'Gửi kèm ảnh khung trước', 'Tạo lại', 'Tải ảnh lên']);
-  await expandAll();
-  await expectLabels('frames-expanded', ['Tạo lại prompt từ kịch bản']);
-  await expectContrast('frames');
+    await click('Prompt & ảnh');
+    await shot('05-step-frames');
+    if (WIDTH >= 1200) check('height-frames', (await pageHeight()) <= 2000, `${await pageHeight()}px (limit 2000)`);
+    else console.log(`INFO height-frames ${await pageHeight()}px (limit applies from 1200px wide)`);
+    await expectLabels('frames-collapsed', ['Tạo prompt cho tất cả khung', 'Gửi kèm ảnh khung trước', 'Tạo lại', 'Tải ảnh lên']);
+    await expandAll();
+    await expectLabels('frames-expanded', ['Tạo lại prompt từ kịch bản']);
+    await expectContrast('frames');
+    await expectNoHScroll('frames');
 
-  await click('Lời thoại & ghép');
-  await shot('06-step-compose', false);
-  await expectLabels('compose', ['AI đặt thoại', '+ Bóng', 'Đặt lại', 'Tải PNG ảnh này', 'Ảnh 2']);
-  await expectContrast('compose');
-  await checkCompose(project);
+    await click('Lời thoại & ghép');
+    await shot('06-step-compose', false);
+    await expectLabels('compose', ['AI đặt thoại', '+ Bóng', 'Đặt lại', 'Tải PNG ảnh này', 'Ảnh 2']);
+    await expectContrast('compose');
+    await expectNoHScroll('compose');
+    await checkCompose(project);
 
-  await click('Duyệt & đăng');
-  await sleep(2500);
-  await shot('07-step-preview');
-  await expectLabels('preview', ['AI viết caption', 'Chia sẻ qua Wi-Fi', 'Tải PNG tất cả ảnh', 'Xuất PDF', 'Đã đăng']);
-  await expectContrast('preview');
+    await click('Duyệt & đăng');
+    await sleep(2500);
+    await shot('07-step-preview');
+    await expectLabels('preview', ['AI viết caption', 'Chia sẻ qua Wi-Fi', 'Tải PNG tất cả ảnh', 'Xuất PDF', 'Đã đăng']);
+    await expectContrast('preview');
+    await expectNoHScroll('preview');
+  }
 
   if (autoRun) await runAutomationThroughUi();
   if (runChecks || autoRun) console.log(`CHECKS FAILED: ${failed}`);
