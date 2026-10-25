@@ -1,15 +1,18 @@
 // One end-to-end test job against a running API: new project -> AI story plan -> draw every frame -> AI bubble placement.
 // Mirrors runAll() in src/hooks/use-story-automation.js, using the app's own pure helpers; saves after each step
 // like the editor's autosave. Run from the repo root: node plans/261023-1613-test-job/run-test-job.mjs
+// Override the story with env: TEST_TITLE, TEST_IDEA, TEST_SLIDES (1-35), TEST_FRAMES ('auto' or 1-4).
+// TEST_PROJECT_ID resumes an existing project: skips the story plan and frames that already have an image.
+// TEST_ATTEMPTS (default 2) and TEST_RETRY_WAIT seconds (default 60) control retries when agy fails to draw.
 import http from 'node:http';
 import { buildFramePrompt } from '../../src/lib/prompt-builder.js';
 import { autoPlaceBubbles, imageToCell } from '../../src/lib/bubbles.js';
 import { computeCells, getLayout } from '../../src/lib/layouts.js';
-import { fitFrames, frameEntries, frameLabel, layoutForFrameCount, uid } from '../../src/lib/story-model.js';
+import { fitFrames, frameEntries, frameLabel, layoutForFrameCount, migrateProject, uid } from '../../src/lib/story-model.js';
 import { imageInfo } from '../../server/agy-runner.js';
 
 const BASE = process.env.API_BASE || 'http://127.0.0.1:5174';
-const IDEA =
+const IDEA = process.env.TEST_IDEA ||
   'Minh đi học về dưới cơn mưa, thấy một chú mèo con ướt sũng trú dưới mái hiên tiệm tạp hoá. ' +
   'Cậu lấy áo khoác che cho mèo, mang về nhà lau khô và cho ăn. Kết thúc: mèo cuộn tròn ngủ trên ba lô của Minh.';
 
@@ -32,6 +35,13 @@ function call(method, url, body, raw = false) {
   });
 }
 
+const TITLE = process.env.TEST_TITLE || '[Test] Minh và chú mèo dưới mưa';
+const SLIDES = Number(process.env.TEST_SLIDES || 2);
+const FRAMES = process.env.TEST_FRAMES === 'auto' ? 'auto' : Number(process.env.TEST_FRAMES || 2);
+const RESUME_ID = process.env.TEST_PROJECT_ID;
+const ATTEMPTS = Number(process.env.TEST_ATTEMPTS || 2);
+const RETRY_WAIT = Number(process.env.TEST_RETRY_WAIT || 60) * 1000;
+
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const started = Date.now();
 const log = (msg) => console.log(`[${Math.round((Date.now() - started) / 1000)}s] ${msg}`);
@@ -40,20 +50,26 @@ const characters = await call('GET', '/api/characters');
 const minh = characters.find((c) => c.name === 'Minh');
 if (!minh) throw new Error('Không thấy nhân vật Minh');
 
-let project = await call('POST', '/api/projects', { title: '[Test] Minh và chú mèo dưới mưa', orientation: 'portrait' });
-project = await call('PUT', `/api/projects/${project.id}`, { ...project, idea: IDEA, characterIds: [minh.id] });
-log(`project ${project.id}`);
+let project;
+if (RESUME_ID) {
+  project = migrateProject(await call('GET', `/api/projects/${RESUME_ID}`));
+  log(`tiếp tục project ${project.id}: ${frameEntries(project).filter((e) => !e.frame.selectedImage).length} khung chưa có ảnh`);
+} else {
+  project = await call('POST', '/api/projects', { title: TITLE, orientation: 'portrait' });
+  project = await call('PUT', `/api/projects/${project.id}`, { ...project, idea: IDEA, characterIds: [minh.id] });
+  log(`project ${project.id}`);
 
-// 1. Story plan (writeStory)
-const { slides } = await call('POST', `/api/projects/${project.id}/story/plan`, {
-  storyIdea: IDEA, slideCount: 2, framesPerSlide: 2, characterIds: project.characterIds,
-});
-project.slides = slides.map((s) => {
-  const layout = layoutForFrameCount(project.orientation, Math.max(1, s.frames.length));
-  return { id: uid(), idea: s.idea, layoutId: layout.id, frames: fitFrames(s.frames, layout) };
-});
-project = await call('PUT', `/api/projects/${project.id}`, project);
-log(`kịch bản: ${project.slides.length} ảnh, ${frameEntries(project).length} khung`);
+  // 1. Story plan (writeStory)
+  const { slides } = await call('POST', `/api/projects/${project.id}/story/plan`, {
+    storyIdea: IDEA, slideCount: SLIDES, framesPerSlide: FRAMES, characterIds: project.characterIds,
+  });
+  project.slides = slides.map((s) => {
+    const layout = layoutForFrameCount(project.orientation, Math.max(1, s.frames.length));
+    return { id: uid(), idea: s.idea, layoutId: layout.id, frames: fitFrames(s.frames, layout) };
+  });
+  project = await call('PUT', `/api/projects/${project.id}`, project);
+  log(`kịch bản: ${project.slides.length} ảnh, ${frameEntries(project).length} khung`);
+}
 
 const updateFrame = (id, patch) => {
   for (const s of project.slides) s.frames = s.frames.map((f) => (f.id === id ? { ...f, ...patch } : f));
@@ -61,15 +77,33 @@ const updateFrame = (id, patch) => {
 
 // 2. Draw frames and place bubbles (fillFrames)
 const failed = [];
+const undrawn = [];
 let prevFile = null;
 for (const e of frameEntries(project)) {
   const label = frameLabel(e.s, e.f, e.frameCount);
+  if (e.frame.selectedImage) {
+    prevFile = e.frame.selectedImage;
+    continue;
+  }
   const prompt = e.frame.prompt?.trim() || buildFramePrompt(project, e.slide, e.frame, characters);
   const t0 = Date.now();
-  const { file } = await call('POST', `/api/projects/${project.id}/images/generate`, {
-    prompt, characterIds: e.frame.characterIds, aspectRatio: e.aspectRatio,
-    styleRefImage: project.usePrevFrameRef ? prevFile : null,
-  });
+  // Retry each frame, so a passing agy hiccup or quota blip does not end a long run.
+  let file = null;
+  for (let attempt = 1; attempt <= ATTEMPTS && !file; attempt++) {
+    if (attempt > 1) await new Promise((r) => setTimeout(r, RETRY_WAIT));
+    try {
+      ({ file } = await call('POST', `/api/projects/${project.id}/images/generate`, {
+        prompt, characterIds: e.frame.characterIds, aspectRatio: e.aspectRatio,
+        styleRefImage: project.usePrevFrameRef ? prevFile : null,
+      }));
+    } catch (err) {
+      log(`vẽ ${label} lần ${attempt} LỖI: ${err.message}`);
+    }
+  }
+  if (!file) {
+    undrawn.push(label);
+    continue;
+  }
   prevFile = file;
   updateFrame(e.frame.id, { prompt, images: [file], selectedImage: file });
   project = await call('PUT', `/api/projects/${project.id}`, project);
@@ -116,4 +150,4 @@ for (const e of frameEntries(project)) {
   project = await call('PUT', `/api/projects/${project.id}`, project);
 }
 
-log(`xong. project=${project.id}, khung lỗi đặt thoại: ${failed.length ? failed.join(', ') : 'không'}`);
+log(`xong. project=${project.id}, khung chưa vẽ được: ${undrawn.length ? undrawn.join(', ') : 'không'}, khung lỗi đặt thoại: ${failed.length ? failed.join(', ') : 'không'}`);
