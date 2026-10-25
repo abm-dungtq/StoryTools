@@ -21,6 +21,18 @@ export default function PublishPanel({ project, update, blobs, missingFrames }) 
   const sharingHere = share?.active && share.projectId === project.id && share.expiresAt > Date.now();
   const link = sharingHere ? share.links[Math.min(linkIndex, share.links.length - 1)] : null;
 
+  // Disabled copy buttons say why, both on hover and as a visible line under them.
+  const noTitleHint = 'Chưa có tiêu đề để copy.';
+  const noTextHint = 'Chưa có caption hay hashtag để copy.';
+  const copyHint =
+    !publish.title && !text
+      ? 'Chưa có tiêu đề và caption để copy: bấm "AI viết caption" hoặc tự nhập.'
+      : !publish.title
+        ? `${noTitleHint} Nhập tiêu đề ở trên.`
+        : !text
+          ? `${noTextHint} Nhập caption hoặc hashtag ở trên.`
+          : '';
+
   async function run(kind, fn) {
     setBusy(kind);
     setError('');
@@ -127,13 +139,14 @@ export default function PublishPanel({ project, update, blobs, missingFrames }) 
             <button className="primary" disabled={Boolean(busy) || !project.slides.length} onClick={writeCaption}>
               {busy === 'caption' ? 'AI đang viết…' : '✨ AI viết caption'}
             </button>
-            <button disabled={!publish.title} onClick={() => copy('title', publish.title)}>
+            <button disabled={!publish.title} title={publish.title ? undefined : noTitleHint} onClick={() => copy('title', publish.title)}>
               {copied === 'title' ? 'Đã copy ✓' : 'Copy tiêu đề'}
             </button>
-            <button disabled={!text} onClick={() => copy('text', text)}>
+            <button disabled={!text} title={text ? undefined : noTextHint} onClick={() => copy('text', text)}>
               {copied === 'text' ? 'Đã copy ✓' : 'Copy caption + hashtag'}
             </button>
           </div>
+          {copyHint && <p className="muted small copy-hint">{copyHint}</p>}
           {field('musicMood', 'Gợi ý nhạc nền')}
           {field('musicKeywords', 'Từ khoá tìm nhạc trong TikTok')}
         </div>
@@ -187,7 +200,7 @@ export default function PublishPanel({ project, update, blobs, missingFrames }) 
       </div>
 
       {error && <p className="error small">{error}</p>}
-      <details className="publish-howto">
+      <details className="howto">
         <summary>Cách đăng lên TikTok</summary>
         <ol className="small muted checklist">
           <li>Lưu ảnh vào điện thoại theo thứ tự 1 → {blobs.length}.</li>

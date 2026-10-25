@@ -167,70 +167,72 @@ export default function FramesStep({ project, characters, settings, automation, 
                     )}
                     {busy && <div className="overlay">Đang tạo ảnh…</div>}
                   </div>
-                  <h3>
-                    {frameLabel(s, f, frameCount)} <span className="muted small">tỉ lệ {aspectRatio}</span>
-                  </h3>
-                  <div className="row wrap">
-                    <button className="primary" disabled={busy || automation.running} onClick={() => generate(frame.id)}>
-                      {frame.selectedImage ? 'Tạo lại' : 'Tạo ảnh'}
-                    </button>
-                    <label className="button">
-                      Tải ảnh lên
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        hidden
-                        onChange={(e) => {
-                          if (e.target.files[0]) uploadImage(frame.id, e.target.files[0]);
-                          e.target.value = '';
-                        }}
-                      />
-                    </label>
-                  </div>
-                  {errors[frame.id] && <p className="error small">{errors[frame.id]}</p>}
-                  {frame.images?.length > 1 && (
-                    <div className="thumbs">
-                      {frame.images.map((file) => (
-                        <img
-                          key={file}
-                          className={file === frame.selectedImage ? 'active' : ''}
-                          src={panelImageUrl(project.id, file)}
-                          title="Chọn ảnh này"
-                          alt=""
-                          onClick={() => updateFrame(frame.id, { selectedImage: file })}
+                  <div className="frame-info">
+                    <h3>
+                      {frameLabel(s, f, frameCount)} <span className="muted small">tỉ lệ {aspectRatio}</span>
+                    </h3>
+                    <div className="row wrap">
+                      <button className="primary" disabled={busy || automation.running} onClick={() => generate(frame.id)}>
+                        {frame.selectedImage ? 'Tạo lại' : 'Tạo ảnh'}
+                      </button>
+                      <label className="button">
+                        Tải ảnh lên
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          hidden
+                          onChange={(e) => {
+                            if (e.target.files[0]) uploadImage(frame.id, e.target.files[0]);
+                            e.target.value = '';
+                          }}
                         />
+                      </label>
+                    </div>
+                    {errors[frame.id] && <p className="error small">{errors[frame.id]}</p>}
+                    {frame.images?.length > 1 && (
+                      <div className="thumbs">
+                        {frame.images.map((file) => (
+                          <img
+                            key={file}
+                            className={file === frame.selectedImage ? 'active' : ''}
+                            src={panelImageUrl(project.id, file)}
+                            title="Chọn ảnh này"
+                            alt=""
+                            onClick={() => updateFrame(frame.id, { selectedImage: file })}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <div className="frame-summary small">
+                      <p className="clamp-2">{frame.scene || frame.action || '—'}</p>
+                      <p className="muted">{frame.characterIds.map(nameOf).join(', ') || 'Không có nhân vật'}</p>
+                      {frame.dialogues.map((d, k) => (
+                        <p key={k}><b>{d.speakerId ? nameOf(d.speakerId) : '…'}:</b> {d.text}</p>
                       ))}
                     </div>
-                  )}
-                  <div className="frame-summary small">
-                    <p className="clamp-2">{frame.scene || frame.action || '—'}</p>
-                    <p className="muted">{frame.characterIds.map(nameOf).join(', ') || 'Không có nhân vật'}</p>
-                    {frame.dialogues.map((d, k) => (
-                      <p key={k}><b>{d.speakerId ? nameOf(d.speakerId) : '…'}:</b> {d.text}</p>
-                    ))}
+                    <div>
+                      <button data-expand aria-expanded={String(open)} onClick={() => togglePrompt(frame.id)}>
+                        {open ? 'Ẩn prompt' : 'Prompt'}
+                      </button>
+                    </div>
+                    {open && (
+                      <>
+                        <textarea
+                          rows={9}
+                          className="mono"
+                          aria-label="Prompt"
+                          value={frame.prompt || ''}
+                          placeholder={buildFramePrompt(project, slide, frame, characters)}
+                          onChange={(e) => updateFrame(frame.id, { prompt: e.target.value })}
+                        />
+                        <div>
+                          <button onClick={() => updateFrame(frame.id, { prompt: buildFramePrompt(project, slide, frame, characters) })}>
+                            Tạo lại prompt từ kịch bản
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div>
-                    <button data-expand aria-expanded={String(open)} onClick={() => togglePrompt(frame.id)}>
-                      {open ? 'Ẩn prompt' : 'Prompt'}
-                    </button>
-                  </div>
-                  {open && (
-                    <>
-                      <textarea
-                        rows={9}
-                        className="mono"
-                        aria-label="Prompt"
-                        value={frame.prompt || ''}
-                        placeholder={buildFramePrompt(project, slide, frame, characters)}
-                        onChange={(e) => updateFrame(frame.id, { prompt: e.target.value })}
-                      />
-                      <div>
-                        <button onClick={() => updateFrame(frame.id, { prompt: buildFramePrompt(project, slide, frame, characters) })}>
-                          Tạo lại prompt từ kịch bản
-                        </button>
-                      </div>
-                    </>
-                  )}
                 </div>
               );
             })}

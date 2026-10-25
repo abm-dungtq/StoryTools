@@ -70,7 +70,8 @@ export default function CharactersView({ characters, setCharacters }) {
                   <img src={characterImageUrl(file)} alt="" />
                   <button
                     className="thumb-remove"
-                    title="Bỏ ảnh"
+                    title="Bỏ ảnh tham chiếu này"
+                    aria-label={`Bỏ ảnh tham chiếu của ${c.name}`}
                     onClick={() => update(c.id, { images: c.images.filter((f) => f !== file) })}
                   >
                     ×

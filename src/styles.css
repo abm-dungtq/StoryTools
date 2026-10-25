@@ -76,7 +76,8 @@ input, select, textarea, button, .button {
   font: inherit; font-size: 0.9rem; border-radius: var(--radius); border: 1px solid var(--border);
   padding: 7px 10px; background: var(--card); color: var(--text); font-weight: 400;
 }
-input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, .button:focus-visible {
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, .button:focus-visible,
+summary:focus-visible, a:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 1px;
 }
 textarea { resize: vertical; }
@@ -133,7 +134,13 @@ button.link { background: none; border: none; justify-content: flex-start; white
 .thumbs img, .thumb-add { width: 84px; height: 84px; object-fit: cover; border-radius: var(--radius); border: 2px solid transparent; cursor: pointer; }
 .thumbs img.active { border-color: var(--accent); }
 .thumb-wrap { position: relative; }
-.thumb-remove { position: absolute; top: 2px; right: 2px; padding: 0 6px; font-size: 0.8rem; }
+/* 28px hit target on an opaque chip so it stays visible over any reference image. */
+.thumb-remove {
+  position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; padding: 0; border-radius: 50%;
+  font-size: 1.1rem; line-height: 1; background: var(--card); border-color: var(--border); color: var(--text);
+  box-shadow: 0 1px 4px var(--shadow);
+}
+.thumb-remove:hover { background: var(--surface-2); border-color: var(--danger); color: var(--danger); }
 .thumb-add { display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border); background: var(--surface-2); font-size: 1.6rem; color: var(--muted); font-weight: 400; }
 
 /* Story list: cover grid with drawing progress. */
@@ -181,7 +188,8 @@ button.link { background: none; border: none; justify-content: flex-start; white
 .hero { border-left: 3px solid var(--accent); }
 button.large { padding: 10px 20px; font-size: 1rem; }
 .setup-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 20px; align-items: start; }
-.frame-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+/* auto-fit lets a slide with only one or two frames stretch its cards across the row. */
+.frame-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
 .frame-card { display: flex; flex-direction: column; gap: 8px; background: var(--surface-2); border-radius: var(--radius); padding: 12px; }
 .frame-card.open { grid-column: 1 / -1; }
 .frame-summary { display: flex; flex-direction: column; gap: 4px; }
@@ -193,7 +201,11 @@ button.large { padding: 10px 20px; font-size: 1rem; }
 
 /* Frames step: sticky toolbar, image-first frame cards, prompt collapsed by default. */
 .toolbar { position: sticky; top: 52px; z-index: 5; background: var(--card); box-shadow: 0 4px 12px var(--shadow); }
-.frame-grid.images { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+/* Image left (capped at 300px), details right: one or two frames fill the row instead of leaving it half empty. */
+.frame-grid.images { grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); }
+.frame-grid.images .frame-card { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.frame-grid.images .frame-card.prompt-open { grid-column: 1 / -1; }
+.frame-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .frame-grid.images .frame-card { background: var(--card); border: 1px solid var(--border); }
 .frame-grid.images .preview { background: var(--surface-2); }
 .frame-grid.images h3 { margin: 0; }
@@ -224,9 +236,12 @@ textarea.mono { width: 100%; background: var(--bg); font-size: 0.8rem; }
 }
 .status-list li.ok { color: var(--success); border-color: var(--success); }
 .status-list li.warning { color: var(--warning); border-color: var(--warning); }
-.publish-howto summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
-.publish-howto summary:hover { color: var(--text); }
-.publish-howto[open] summary { margin-bottom: 6px; }
+/* Collapsible how-to notes (publish steps, bubble editing tips). */
+.howto summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.howto summary:hover { color: var(--text); }
+.howto[open] summary { margin-bottom: 6px; }
+.howto ul { margin: 0; padding-left: 18px; }
+.copy-hint { margin: 0; }
 /* QR stays black on white so phones can scan it. */
 .qr { width: 220px; height: 220px; background: #fff; padding: 8px; border-radius: var(--radius); border: 1px solid var(--border); image-rendering: pixelated; }
 .break { word-break: break-all; }
@@ -256,4 +271,6 @@ textarea.mono { width: 100%; background: var(--bg); font-size: 0.8rem; }
 @media (max-width: 1000px) {
   .panel-row, .compose, .publish-grid, .setup-grid { grid-template-columns: 1fr; }
   .compose-canvas.portrait { height: auto; width: 100%; }
+  /* Stacked under the canvas, a sticky sidebar would slide over it while scrolling. */
+  .compose-side { position: static; }
 }

@@ -276,10 +276,14 @@ export default function ComposeStep({ project, characters, automation, updateFra
               </div>
             </>
           ) : (
-            <p className="muted small">
-              Nhấp đúp vào bóng thoại để sửa chữ (Enter lưu, Esc huỷ). Bấm để chọn, kéo thân để di chuyển, kéo chấm xanh để chỉnh đuôi, kéo ô vuông bên
-              phải để đổi độ rộng.
-            </p>
+            <details className="howto">
+              <summary>Nhấp đúp vào bóng để sửa chữ</summary>
+              <ul className="small muted">
+                <li>Enter lưu, Esc huỷ.</li>
+                <li>Bấm để chọn, kéo thân để di chuyển.</li>
+                <li>Kéo chấm xanh để chỉnh đuôi, kéo ô vuông bên phải để đổi độ rộng.</li>
+              </ul>
+            </details>
           )}
           {slide.frames.map((frame, i) => (
             <div key={frame.id} className="frame-card stack tight">
