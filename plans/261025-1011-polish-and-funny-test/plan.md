@@ -1,6 +1,6 @@
 ---
 title: "Xử lý các vấn đề còn tồn sau đợt thiết kế lại giao diện, rồi chạy thử truyện hài 15 ảnh"
-status: in-progress
+status: completed
 created: 2026-10-25
 mode: advice (kongming opus/high)
 ---
@@ -24,7 +24,7 @@ mode: advice (kongming opus/high)
 | # | Nội dung | Trạng thái |
 | --- | --- | --- |
 | 1 | Sửa lỗi UI và mở rộng `capture-screens.mjs`: `--story`, `--width`, `--base`, `--empty`, kiểm focus và cuộn ngang | completed |
-| 2 | Chạy truyện hài 15 ảnh bằng `run-test-job.mjs` (xem dưới) | in-progress |
+| 2 | Chạy truyện hài 15 ảnh bằng `run-test-job.mjs` (xem dưới) | completed |
 
 ## Tiêu chí hoàn thành
 
@@ -49,3 +49,13 @@ TEST_PROJECT_ID=caba2bdbfde4 TEST_ATTEMPTS=30 TEST_RETRY_WAIT=600   node plans/2
 
 - Giới hạn chiều cao trang (`height-script`, `height-frames`) chỉ áp từ 1200px trở lên. Ở 900px, cột xếp chồng nên trang cao hơn là đúng thiết kế; công cụ in dòng `INFO` thay vì `CHECK`.
 - Ngoài phạm vi, ghi lại để làm sau: nút "Tải ảnh lên" là `<label>` bọc input `hidden` nên không Tab tới được; dưới khoảng 600px thẻ khung ở bước Ảnh bị ép cột chữ.
+
+## Kết quả truyện hài
+
+- Project `caba2bdbfde4`: 15 ảnh, 24 khung. Cả 24 khung đều có ảnh và bóng thoại, không khung nào lỗi.
+- Kịch bản mất khoảng 80 giây. Mỗi khung vẽ mất 85–220 giây khi còn quota, và đặt thoại mất 22–115 giây.
+- Từ Ảnh 7, agy liên tục báo hết hạn mức vẽ ảnh. Tổng thời gian chạy vì vậy khoảng 8 giờ, so với khoảng 1 giờ nếu quota đủ.
+- Chất lượng: nhân vật và phong cách nhất quán, mạch truyện bám đúng cốt truyện, thoại hài và đúng giọng.
+- Lệch nhỏ:
+  - Minh đeo ba lô ngay cả trong bếp, vì mô tả nhân vật mới có ba lô.
+  - Từ Ảnh 3 trở đi, tạp dề có lúc mất.

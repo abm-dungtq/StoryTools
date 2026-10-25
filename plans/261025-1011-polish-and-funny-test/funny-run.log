@@ -1,0 +1,24 @@
+[0s] project caba2bdbfde4
+[80s] kịch bản: 15 ảnh, 24 khung
+[164s] vẽ Ảnh 1 (9:16): 85s
+[193s] đặt thoại Ảnh 1: 2 bóng, 29s
+[367s] vẽ Ảnh 2 · Khung 1 (1:1): 173s
+[403s] đặt thoại Ảnh 2 · Khung 1: 1 bóng, 36s
+[494s] vẽ Ảnh 2 · Khung 2 (1:1): 91s
+[524s] đặt thoại Ảnh 2 · Khung 2: 1 bóng, 31s
+[610s] vẽ Ảnh 3 · Khung 1 (1:1): 85s
+[639s] đặt thoại Ảnh 3 · Khung 1: 1 bóng, 29s
+[726s] vẽ Ảnh 3 · Khung 2 (1:1): 86s
+[760s] đặt thoại Ảnh 3 · Khung 2: 1 bóng, 34s
+[853s] vẽ Ảnh 4 · Khung 1 (1:1): 92s
+[878s] đặt thoại Ảnh 4 · Khung 1: 1 bóng, 25s
+[984s] vẽ Ảnh 4 · Khung 2 (1:1): 107s
+[1011s] đặt thoại Ảnh 4 · Khung 2: 1 bóng, 26s
+[1235s] vẽ Ảnh 5 · Khung 1 (1:1): 224s
+[1258s] đặt thoại Ảnh 5 · Khung 1: 1 bóng, 24s
+[1383s] vẽ Ảnh 5 · Khung 2 (1:1): 124s
+[1415s] đặt thoại Ảnh 5 · Khung 2: 1 bóng, 33s
+[1497s] vẽ Ảnh 6 lần 1 LỖI: POST /api/projects/caba2bdbfde4/images/generate -> 502: {"error":"agy: không tạo được ảnh (có thể hết quota hoặc nội dung bị chặn). hạn ngạch được làm mới hoặc chuyển sang sử dụng mô hình/công cụ tạo ảnh khác.\nYêu cầu đã được kiểm tra và ghi nhận: tiến trình tạo ảnh đã dừng lại do hạn ngạch (quota) của dịch vụ tạo ảnh hiện đang tạm hết. Tôi sẽ sẵn sàng hỗ trợ tiếp tục tạo lại khung ảnh `out.png` ngay khi hạn mức được khôi phục.\n"}
+[1615s] vẽ Ảnh 6 (9:16): 200s
+[1696s] đặt thoại Ảnh 6: 1 bóng, 81s
+[1790s] vẽ Ảnh 7 · Khung 1 lần 1 LỖI: POST /api/projects/caba2bdbfde4/images/generate -> 502: {"error":"agy: không tạo được ảnh (có thể hết quota hoặc nội dung bị chặn). lash-image`), dự kiến hạn ngạch sẽ được làm mới sau khoảng hơn 4 giờ nữa.\n\nVì không được phép chạy lệnh/công cụ ngoài phạm vi quy định hoặc tự động thử lại khi hết hạn ngạch API, việc tạo file `out.png` tạm thời chưa thể thực hiện ngay lúc này. Bạn vui lòng thử lại sau khi hệ thống reset quota nhé!\n"}
