@@ -10,8 +10,8 @@ const MAX_PARALLEL = Number(process.env.AGY_CONCURRENCY) || 2;
 const MAX_PROMPT_CHARS = 28000;
 
 export class AgyError extends Error {
-  constructor(message, status = 502) {
-    super(`agy: ${message}`);
+  constructor(message, status = 502, tool = 'agy') {
+    super(`${tool}: ${message}`);
     this.status = status;
   }
 }
@@ -93,36 +93,39 @@ export function dataBlock(label, text) {
   return `<<<DATA ${label}>>>\n${String(text ?? '').replaceAll('<<<', '‹‹‹')}\n<<<END DATA>>>`;
 }
 
-let active = 0;
-const waiting = [];
-
-/** Waits for a free agy slot; a cancelled request leaves the queue without taking a slot. */
-function acquire(signal) {
-  if (active < MAX_PARALLEL) {
-    active++;
-    return Promise.resolve();
-  }
-  return new Promise((resolve, reject) => {
-    const entry = {};
-    const onAbort = () => {
-      const i = waiting.indexOf(entry);
-      if (i >= 0) waiting.splice(i, 1);
-      reject(new AgyError('đã huỷ', 499));
-    };
-    entry.resolve = () => {
-      signal?.removeEventListener('abort', onAbort);
+/** A queue allowing `max` jobs at once; a cancelled request leaves the queue without taking a slot. */
+export function createLimiter(max, tool = 'agy') {
+  let active = 0;
+  const waiting = [];
+  const acquire = (signal) => {
+    if (active < max) {
       active++;
-      resolve();
-    };
-    signal?.addEventListener('abort', onAbort, { once: true });
-    waiting.push(entry);
-  });
+      return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+      const entry = {};
+      const onAbort = () => {
+        const i = waiting.indexOf(entry);
+        if (i >= 0) waiting.splice(i, 1);
+        reject(new AgyError('đã huỷ', 499, tool));
+      };
+      entry.resolve = () => {
+        signal?.removeEventListener('abort', onAbort);
+        active++;
+        resolve();
+      };
+      signal?.addEventListener('abort', onAbort, { once: true });
+      waiting.push(entry);
+    });
+  };
+  const release = () => {
+    active--;
+    waiting.shift()?.resolve();
+  };
+  return { acquire, release };
 }
 
-function release() {
-  active--;
-  waiting.shift()?.resolve();
-}
+const { acquire, release } = createLimiter(MAX_PARALLEL);
 
 // agy starts helper processes (e.g. the image subagent); on Windows killing the parent alone leaves them running.
 function killTree(child) {
@@ -146,11 +149,14 @@ function killTree(child) {
   }
 }
 
-/** Spawns agy in `dir` and resolves with its stdout once it exits, is cancelled, or times out. */
-function runProcess(args, dir, timeoutSec, signal) {
+/**
+ * Spawns a CLI in `dir` and resolves with its stdout and exit code once it exits, is cancelled, or times out.
+ * `tool` names the CLI in error messages; `bin` and `missing` say what to run and what to tell the user when it is not installed.
+ */
+export function runProcess(args, dir, timeoutSec, signal, { bin = AGY_BIN, tool = 'agy', missing = 'không tìm thấy lệnh agy. Cài agy CLI hoặc đặt biến AGY_BIN' } = {}) {
   return new Promise((resolve, reject) => {
     // detached gives the child its own process group on POSIX so the whole tree can be signalled.
-    const child = spawn(AGY_BIN, args, { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, detached: process.platform !== 'win32' });
+    const child = spawn(bin, args, { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, detached: process.platform !== 'win32' });
     let stdout = '';
     let stderr = '';
     let settled = false;
@@ -180,11 +186,11 @@ function runProcess(args, dir, timeoutSec, signal) {
       clearTimeout(timer);
       clearTimeout(forceTimer);
       signal?.removeEventListener('abort', onAbort);
-      if (reason === 'aborted') reject(new AgyError('đã huỷ', 499));
-      else if (reason === 'timeout') reject(new AgyError(`quá ${timeoutSec}s không xong`, 504));
-      else if (err?.code === 'ENOENT') reject(new AgyError('không tìm thấy lệnh agy. Cài agy CLI hoặc đặt biến AGY_BIN', 500));
-      else if (err) reject(new AgyError(err.message));
-      else resolve({ stdout, stderr });
+      if (reason === 'aborted') reject(new AgyError('đã huỷ', 499, tool));
+      else if (reason === 'timeout') reject(new AgyError(`quá ${timeoutSec}s không xong`, 504, tool));
+      else if (err?.code === 'ENOENT') reject(new AgyError(missing, 500, tool));
+      else if (err) reject(new AgyError(err.message, 502, tool));
+      else resolve({ stdout, stderr, code: child.exitCode });
     };
     child.on('error', finish);
     child.on('close', () => finish());
