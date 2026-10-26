@@ -54,5 +54,5 @@ frame.assetIds:  [assetId]
 ## Status (2026-10-26)
 - Phase 1–5 xong; review đã sửa: plan không ghi đè ảnh mẫu vẽ trong lúc AI chạy (khoá bước 2 + merge theo id), slide khoá giữ nguyên mô tả trang phục, AI bỏ sót slide/khung/nhân vật thì giữ gán cũ, key trùng không ánh xạ lại, nhân vật bị bỏ khỏi dàn không chặn slide, ảnh mẫu cũ được vẽ lại, mô tả trống là lỗi, ảnh tham chiếu mất trên đĩa được bỏ qua.
 - `npm test` 44/44, `npm run build` OK. Project cũ mở được, không bị chặn.
-- Chạy thật `E2E_MANUAL=1 node plans/261026-1005-outfits-assets-gflow-primary/run-outfits-e2e.mjs`: ảnh mẫu trang phục, asset và khung đều vẽ bằng gflow, đúng trang phục từng giai đoạn.
-- **Còn mở:** lượt AI lập trang phục (`/outfits/plan`) và dự phòng agy chưa chạy thật vì agy hết quota (hồi sau ~148 giờ tính từ 2026-10-26). Khi có quota: chạy script trên không có `E2E_MANUAL`, và thử dự phòng bằng cách đặt biến GFLOW_BIN sai.
+- Chạy thật `E2E_MANUAL=1 node plans/261026-1005-outfits-assets-gflow-primary/run-outfits-e2e.mjs` (project `78880ad3bd7b`): 6 ảnh mẫu và khung 1–2 vẽ bằng gflow; khung 3 gflow lỗi (Flow trả phản hồi không đọc được) nên tự chuyển agy, khung 4 vẽ bằng agy trong 10 phút nghỉ Flow. Cả 4 khung đúng trang phục và asset từng giai đoạn.
+- **Còn mở:** lượt AI lập trang phục (`/outfits/plan`) chưa chạy thật vì quota viết của agy đã hết (hồi sau ~148 giờ tính từ 2026-10-26). Khi có quota: chạy script trên không có `E2E_MANUAL`.
