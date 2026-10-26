@@ -18,10 +18,23 @@ test('concurrent saves of one project all succeed', async () => {
 });
 
 test('concurrent settings patches keep both keys', async () => {
-  await Promise.all([store.saveSettings({ textModel: 'a' }), store.saveSettings({ imageModel: 'b' })]);
+  await Promise.all([
+    store.saveSettings({ textModel: 'a' }),
+    store.saveSettings({ imageModel: 'gflow:nano-pro' }),
+    store.saveSettings({ fallbackImageModel: 'b' }),
+  ]);
   const settings = await store.getSettings();
   assert.equal(settings.textModel, 'a');
-  assert.equal(settings.imageModel, 'b');
+  assert.equal(settings.imageModel, 'gflow:nano-pro');
+  assert.equal(settings.fallbackImageModel, 'b');
+});
+
+test('a Flow model saved under the old single image key becomes the Flow model, not the agy fallback', async () => {
+  const file = path.join(store.DATA_DIR, 'settings.json');
+  fs.writeFileSync(file, JSON.stringify({ agyImageModel: 'gflow:nano2' }));
+  assert.deepEqual(await store.getSettings(), { textModel: 'gemini-4-argon-medium', imageModel: 'gflow:nano2', fallbackImageModel: 'gemini-3.8-flash-low' });
+  await store.saveSettings({ fallbackImageModel: 'gemini-x' });
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), { flowImageModel: 'gflow:nano2', agyImageModel: 'gemini-x' });
 });
 
 test('startup drops the legacy key and stale job dirs', async () => {

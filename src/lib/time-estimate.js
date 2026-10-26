@@ -1,5 +1,5 @@
-// Rough wall-clock time per frame through agy (measured 2026-10: ~75 s drawing + ~15 s bubble placement).
-export const SECONDS_PER_FRAME = 90;
+// Rough wall-clock time per frame through Google Flow (measured 2026-10: ~95 s drawing with references + ~15 s bubble placement).
+export const SECONDS_PER_FRAME = 110;
 
 /** "~12 phút" or "~1 giờ 45 phút" for drawing `frames` frames one after another. */
 export function formatDuration(frames) {

@@ -56,7 +56,8 @@ export default function CharactersView({ characters, setCharacters }) {
         </div>
       </div>
       <p className="muted small">
-        Mô tả cố định sẽ được chèn vào mọi prompt. Viết thật cụ thể (tuổi, tóc, mắt, trang phục, màu sắc). Ảnh tham chiếu: 1–3 ảnh rõ mặt, nền đơn giản.
+        Mô tả cố định sẽ được chèn vào mọi prompt. Viết thật cụ thể những nét không đổi (tuổi, dáng người, tóc, mắt, màu da). Trang phục do từng
+        truyện quy định theo giai đoạn ở bước 2 "Trang phục", nên không cần ghi ở đây. Ảnh tham chiếu: 1–3 ảnh rõ mặt, nền đơn giản.
       </p>
       {error && <p className="error">{error}</p>}
       {characters.length === 0 && <p className="muted">Chưa có nhân vật nào.</p>}
@@ -103,7 +104,7 @@ export default function CharactersView({ characters, setCharacters }) {
                   rows={5}
                   value={c.description}
                   onChange={(e) => update(c.id, { description: e.target.value })}
-                  placeholder="VD: cậu bé 13 tuổi, tóc đen rối xù, mắt to nâu, áo polo vàng mù tạt, tạp dề vải xanh rêu, quần jean xanh, giày vải đỏ"
+                  placeholder="VD: cậu bé 13 tuổi, dáng gầy, tóc đen rối xù, mắt to nâu, da ngăm"
                 />
               </div>
               <div className="stack tight">
@@ -117,7 +118,7 @@ export default function CharactersView({ characters, setCharacters }) {
                   rows={5}
                   value={c.traits || ''}
                   onChange={(e) => update(c.id, { traits: e.target.value })}
-                  placeholder="VD: tóc đen rối xù, áo polo vàng mù tạt, tạp dề xanh rêu, giày vải đỏ"
+                  placeholder="VD: tóc đen rối xù, mắt to nâu, da ngăm, dáng gầy"
                 />
               </div>
             </div>

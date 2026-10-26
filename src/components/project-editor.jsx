@@ -6,14 +6,16 @@ import { migrateProject } from '../lib/story-model.js';
 import { stepStatus } from '../lib/step-status.js';
 import ComposeStep from './compose-step.jsx';
 import FramesStep from './frames-step.jsx';
+import OutfitsStep from './outfits-step.jsx';
 import PreviewStep from './preview-step.jsx';
 import ScriptStep from './script-step.jsx';
 
 const STEPS = [
   { id: 'script', label: '1. Kịch bản' },
-  { id: 'frames', label: '2. Prompt & ảnh' },
-  { id: 'compose', label: '3. Lời thoại & ghép' },
-  { id: 'preview', label: '4. Duyệt & đăng' },
+  { id: 'outfits', label: '2. Trang phục' },
+  { id: 'frames', label: '3. Prompt & ảnh' },
+  { id: 'compose', label: '4. Lời thoại & ghép' },
+  { id: 'preview', label: '5. Duyệt & đăng' },
 ];
 
 // Accepts either a partial object or a function (current) => partial.
@@ -107,7 +109,8 @@ export default function ProjectEditor({ projectId, characters, settings, onSetti
         </div>
       )}
 
-      {step === 'script' && <ScriptStep {...stepProps} onAutomationDone={() => setStep('compose')} />}
+      {step === 'script' && <ScriptStep {...stepProps} onAutomationDone={() => setStep('compose')} onReviewOutfits={() => setStep('outfits')} />}
+      {step === 'outfits' && <OutfitsStep {...stepProps} />}
       {step === 'frames' && <FramesStep {...stepProps} />}
       {step === 'compose' && <ComposeStep {...stepProps} />}
       {step === 'preview' && <PreviewStep project={project} update={update} />}

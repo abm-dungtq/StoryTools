@@ -40,6 +40,9 @@ export const api = {
   planStory: (id, body, signal) => request('POST', `/api/projects/${id}/story/plan`, body, signal),
   placeBubbles: (id, body, signal) => request('POST', `/api/projects/${id}/frames/bubbles`, body, signal),
   generateImage: (id, body, signal) => request('POST', `/api/projects/${id}/images/generate`, body, signal),
+  planOutfits: (id, body, signal) => request('POST', `/api/projects/${id}/outfits/plan`, body, signal),
+  generateSheet: (id, body, signal) => request('POST', `/api/projects/${id}/sheets/generate`, body, signal),
+  resumeFlow: () => request('POST', '/api/flow/resume'),
   uploadPanelImage: (id, file) => uploadFile(`/api/projects/${id}/images/upload`, file),
   generateCaption: (id, body, signal) => request('POST', `/api/projects/${id}/caption`, body, signal),
 

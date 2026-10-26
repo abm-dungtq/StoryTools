@@ -2,19 +2,16 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { formatDuration } from '../lib/time-estimate.js';
 
-// One model-list call shared by every dropdown on the page: Google Flow models (gflow-cli) and agy models.
+// One model-list call shared by every dropdown on the page: Google Flow models (gflow-cli) and agy fallback models.
 let modelsPromise;
-const loadModels = () =>
+export const loadModels = () =>
   (modelsPromise ??= api.listModels().catch(() => {
     // Let the next dropdown retry instead of caching the failure for the whole page.
     modelsPromise = undefined;
-    return { image: [], labels: {} };
+    return { text: [], image: [], fallback: [], labels: {} };
   }));
 
-/**
- * Dropdown for the image model: a Google Flow model (drawn through gflow-cli) or the agy model that drives drawing,
- * plus the expected time for `frames` frames when given.
- */
+/** Dropdown for the Google Flow model that draws every image, plus the expected time for `frames` frames when given. */
 export default function ImageModelSelect({ value, onChange, frames = 0, disabled = false, stacked = false }) {
   const [models, setModels] = useState([]);
   const [labels, setLabels] = useState({});
@@ -33,7 +30,7 @@ export default function ImageModelSelect({ value, onChange, frames = 0, disabled
         Model vẽ ảnh
         <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} style={stacked ? { width: '100%' } : undefined}>
           {options.map((id) => (
-            <option key={id} value={id}>{labels[id] || (id.startsWith('gflow:') ? id : `agy · ${id}`)}</option>
+            <option key={id} value={id}>{labels[id] || id}</option>
           ))}
         </select>
       </label>

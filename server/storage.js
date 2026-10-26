@@ -83,23 +83,36 @@ const writeJson = (file, data) => withFileLock(file, () => writeJsonNow(file, da
 // ---- settings ----
 const LEGACY_SETTINGS = ['apiKey', 'textModel', 'imageModel'];
 
+const isFlowModel = (model) => String(model || '').startsWith('gflow:');
+
+/**
+ * Images are drawn with a Google Flow model (`imageModel`, through gflow-cli); `fallbackImageModel` is the agy model
+ * used when gflow is missing or failing. Earlier versions kept the one image model under agyImageModel.
+ */
 export async function getSettings() {
   // agy models live under their own keys so model names saved by older versions are never sent to agy.
   const saved = await readJson(SETTINGS_FILE, {});
+  const legacyFlow = isFlowModel(saved.agyImageModel);
   return {
     textModel: saved.agyTextModel || 'gemini-4-argon-medium',
-    imageModel: saved.agyImageModel || 'gemini-3.8-flash-low',
+    imageModel: saved.flowImageModel || (legacyFlow ? saved.agyImageModel : 'gflow:nano2'),
+    fallbackImageModel: (!legacyFlow && saved.agyImageModel) || 'gemini-3.8-flash-low',
   };
 }
 
-export async function saveSettings({ textModel, imageModel }) {
+export async function saveSettings({ textModel, imageModel, fallbackImageModel }) {
   const patch = {};
   if (textModel) patch.agyTextModel = textModel;
-  if (imageModel) patch.agyImageModel = imageModel;
+  if (isFlowModel(imageModel)) patch.flowImageModel = imageModel;
+  if (fallbackImageModel && !isFlowModel(fallbackImageModel)) patch.agyImageModel = fallbackImageModel;
   // Read and write under one lock so two concurrent patches both survive.
   await withFileLock(SETTINGS_FILE, async () => {
     const saved = await readJson(SETTINGS_FILE, {});
     for (const key of LEGACY_SETTINGS) delete saved[key];
+    if (isFlowModel(saved.agyImageModel)) {
+      saved.flowImageModel ??= saved.agyImageModel;
+      delete saved.agyImageModel;
+    }
     await writeJsonNow(SETTINGS_FILE, { ...saved, ...patch });
   });
 }

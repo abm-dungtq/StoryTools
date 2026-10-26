@@ -6,11 +6,11 @@ const frame = (patch) => ({ id: 'f', characterIds: [], dialogues: [], scene: 'x'
 const story = (frames, publish) => ({ orientation: 'portrait', slides: [{ id: 's', layoutId: 'p1', frames }], publish });
 
 test('empty story has nothing done', () => {
-  assert.deepEqual(stepStatus({ orientation: 'portrait', slides: [] }), { script: false, frames: false, compose: false, preview: false });
+  assert.deepEqual(stepStatus({ orientation: 'portrait', slides: [] }), { script: false, outfits: false, frames: false, compose: false, preview: false });
 });
 
 test('script done but images missing', () => {
-  assert.deepEqual(stepStatus(story([frame({})])), { script: true, frames: false, compose: false, preview: false });
+  assert.deepEqual(stepStatus(story([frame({})])), { script: true, outfits: false, frames: false, compose: false, preview: false });
 });
 
 test('frame with dialogue needs bubbles that did not fail', () => {

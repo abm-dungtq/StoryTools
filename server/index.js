@@ -1,13 +1,16 @@
-// Local API server: storage for characters/projects, AI frame writing + image generation through agy, static image files.
+// Local API server: storage for characters/projects, AI writing through agy, image drawing through gflow (agy fallback), static image files.
 import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import multer from 'multer';
 import * as store from './storage.js';
-import { characterRefName, styleRefName } from '../src/lib/ref-names.js';
-import { agyVersion, describeCharacter, generateCaption, generateFrames, generateImage, generateStoryPlan, listModels, placeBubbles } from './agy.js';
-import { GFLOW_MODELS, generateImageWithGflow, gflowVersion, isGflowModel } from './gflow.js';
+import { characterRefName } from '../src/lib/ref-names.js';
+import { agyVersion, describeCharacter, generateCaption, generateFrames, generateStoryPlan, listModels, placeBubbles, planOutfits } from './agy.js';
+import { buildFrameRefs } from './frame-refs.js';
+import { GFLOW_MODELS, gflowVersion } from './gflow.js';
+import { drawImage, flowPause, resumeFlow } from './image-engine.js';
+import { normalizeOutfitPlan, outfitPlanInput } from './outfit-plan.js';
 import { shareStatus, startShare, stopShare } from './lan-share.js';
 
 const PORT = Number(process.env.PORT) || 5174;
@@ -61,25 +64,36 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 
 
 // ---- settings ----
 app.get('/api/settings', async (_req, res) => {
-  const { textModel, imageModel } = await store.getSettings();
-  res.json({ textModel, imageModel, agyVersion: await agyVersion(), gflowVersion: await gflowVersion() });
+  const { textModel, imageModel, fallbackImageModel } = await store.getSettings();
+  res.json({ textModel, imageModel, fallbackImageModel, agyVersion: await agyVersion(), gflowVersion: await gflowVersion(), flowPause: flowPause() });
 });
 
 app.put('/api/settings', async (req, res) => {
-  const { textModel, imageModel } = req.body || {};
+  const { textModel, imageModel, fallbackImageModel } = req.body || {};
   const patch = {};
   if (typeof textModel === 'string' && textModel.trim()) patch.textModel = textModel.trim();
-  if (typeof imageModel === 'string' && imageModel.trim()) patch.imageModel = imageModel.trim();
+  if (GFLOW_MODELS.some((m) => m.id === imageModel)) patch.imageModel = imageModel;
+  if (typeof fallbackImageModel === 'string' && fallbackImageModel.trim()) patch.fallbackImageModel = fallbackImageModel.trim();
   await store.saveSettings(patch);
   res.json({ ok: true });
 });
 
-// Image models: Google Flow ones (when gflow-cli is installed) first, then agy's. Either list may be missing.
+// Image models: Google Flow ones draw (listed even before gflow-cli is installed), agy ones are the fallback.
 app.get('/api/models', async (_req, res) => {
-  const [agy, gflow] = await Promise.all([listModels().catch(() => null), gflowVersion()]);
-  if (!agy && !gflow) throw new Error('Không chạy được agy models và chưa cài gflow-cli');
-  const flow = gflow ? GFLOW_MODELS : [];
-  res.json({ text: agy?.text || [], image: [...flow.map((m) => m.id), ...(agy?.image || [])], labels: Object.fromEntries(flow.map((m) => [m.id, m.label])) });
+  let agy = null;
+  let agyError = '';
+  try {
+    agy = await listModels();
+  } catch (err) {
+    agyError = err.message;
+  }
+  res.json({
+    text: agy?.text || [],
+    image: GFLOW_MODELS.map((m) => m.id),
+    fallback: agy?.image || [],
+    labels: Object.fromEntries(GFLOW_MODELS.map((m) => [m.id, m.label])),
+    agyError,
+  });
 });
 
 // ---- characters ----
@@ -209,42 +223,132 @@ app.post('/api/projects/:id/frames/bubbles', async (req, res) => {
   res.json({ bubbles });
 });
 
-// Generates one frame image. Reference images: character refs + optionally the previous frame for style continuity.
+/**
+ * Reads the files a frame refs list points at: character photos or this story's images (sheets, previous panel).
+ * A file deleted from disk is skipped so the image can still be drawn; unsafe names still fail.
+ */
+async function loadRefs(refs, panelDir) {
+  const loaded = await Promise.all(
+    refs.map(async ({ from, file, ...ref }) => {
+      try {
+        return { ...ref, ...(await store.readImageAsInline(from === 'characters' ? store.CHARACTER_IMAGE_DIR : panelDir, String(file))) };
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err;
+        console.warn(`Bỏ ảnh tham chiếu không còn trên đĩa: ${ref.name}`);
+        return null;
+      }
+    }),
+  );
+  return loaded.filter(Boolean);
+}
+
+const listOf = (v) => (Array.isArray(v) ? v : []);
+
+// Generates one frame image. References: outfit sheets, character photos, asset sheets and optionally the previous
+// frame. Outfits and assets come from the request because the client autosave may lag behind.
 app.post('/api/projects/:id/images/generate', async (req, res) => {
   const project = await store.getProject(req.params.id);
-  const { prompt, characterIds = [], aspectRatio, styleRefImage } = req.body || {};
+  const { prompt, characterIds = [], aspectRatio, styleRefImage, outfits, assets } = req.body || {};
   if (!prompt?.trim()) return res.status(400).json({ error: 'Prompt trống' });
 
   const characters = (await store.listCharacters()).filter((c) => characterIds.includes(c.id));
-  const refs = [];
-  for (const c of characters) {
-    for (const [i, file] of (c.images || []).entries()) {
-      refs.push({
-        name: characterRefName(c.id, i, file),
-        label: `Reference image of "${c.name}"${c.traits?.trim() ? ` (${c.traits.trim()})` : ''}. Shows only this character.`,
-        ...(await store.readImageAsInline(store.CHARACTER_IMAGE_DIR, file)),
-      });
-    }
-  }
   const frameDir = path.join(store.PANEL_IMAGE_DIR, store.assertSafeName(project.id));
-  if (styleRefImage) {
-    refs.push({
-      name: styleRefName(styleRefImage),
-      // With several people the previous panel is the main source of swapped outfits, so it may only lend its style.
-      label:
-        characters.length > 1
-          ? 'Previous panel of the same comic. Use it ONLY for art style, line work and color palette. Do NOT copy who stands where, who wears what, or any face from it.'
-          : 'Previous panel of the same comic – match its art style, color palette and character design',
-      ...(await store.readImageAsInline(frameDir, styleRefImage)),
-    });
+  const refs = await loadRefs(
+    buildFrameRefs({
+      characters,
+      outfits: listOf(outfits).map((o) => ({ characterId: String(o?.characterId || ''), name: String(o?.name || ''), image: o?.image || null })),
+      assets: listOf(assets).map((a) => ({ id: String(a?.id || ''), kind: a?.kind === 'place' ? 'place' : 'prop', name: String(a?.name || ''), image: a?.image || null })),
+      styleRefImage,
+    }),
+    frameDir,
+  );
+
+  const image = await drawImage({ settings: await store.getSettings(), prompt, refs, aspectRatio, signal: clientSignal(res) });
+  const file = await store.saveImage(frameDir, image.buffer, image.mimeType);
+  res.json({ file, engine: image.engine, fallbackReason: image.fallbackReason || '' });
+});
+
+const SHEET_ASPECT = { outfit: '16:9', prop: '1:1', place: '16:9' };
+
+// Draws the reference sheet of an outfit (the character wearing it, from their photos) or of a prop or place.
+app.post('/api/projects/:id/sheets/generate', async (req, res) => {
+  const project = await store.getProject(req.params.id);
+  const { kind, name = '', description = '', characterId, style } = req.body || {};
+  if (!SHEET_ASPECT[kind]) return res.status(400).json({ error: 'Loại ảnh mẫu không hợp lệ' });
+  if (!String(description).trim()) return res.status(400).json({ error: 'Hãy mô tả trước khi vẽ ảnh mẫu' });
+
+  const artStyle = `Art style: ${String(style || project.style || '').trim()}.`;
+  let prompt;
+  let refs = [];
+  if (kind === 'outfit') {
+    const character = (await store.listCharacters()).find((c) => c.id === characterId);
+    if (!character) return res.status(400).json({ error: 'Không tìm thấy nhân vật của trang phục này' });
+    const identity = [character.traits, character.description].map((t) => String(t || '').trim()).filter(Boolean).join('; ');
+    refs = (character.images || []).slice(0, 3).map((file, i) => ({
+      name: characterRefName(character.id, i, file),
+      from: 'characters',
+      file,
+      priority: i,
+      label: `Photo of "${character.name}": copy the face, hair, skin and build ONLY. Ignore the clothes in it.`,
+    }));
+    prompt = [
+      `Character: ${character.name}.`,
+      identity && `Fixed identity (face, hair, body; ignore any clothing mentioned here): ${identity}.`,
+      `Outfit "${String(name).trim()}": ${String(description).trim()}. Draw exactly this outfit, nothing else worn or carried.`,
+      artStyle,
+    ]
+      .filter(Boolean)
+      .join('\n');
+  } else {
+    prompt = `${kind === 'place' ? 'Location' : 'Object'} "${String(name).trim()}": ${String(description).trim()}.\n${artStyle}`;
   }
 
-  const settings = await store.getSettings();
-  const image = isGflowModel(settings.imageModel)
-    ? await generateImageWithGflow({ model: settings.imageModel, prompt, refs, aspectRatio, signal: clientSignal(res) })
-    : await generateImage({ settings, prompt, refs, aspectRatio, signal: clientSignal(res) });
+  const frameDir = path.join(store.PANEL_IMAGE_DIR, store.assertSafeName(project.id));
+  const image = await drawImage({
+    settings: await store.getSettings(),
+    kind,
+    prompt,
+    refs: await loadRefs(refs, frameDir),
+    aspectRatio: SHEET_ASPECT[kind],
+    signal: clientSignal(res),
+  });
   const file = await store.saveImage(frameDir, image.buffer, image.mimeType);
-  res.json({ file });
+  res.json({ file, engine: image.engine, fallbackReason: image.fallbackReason || '' });
+});
+
+// Costume director pass over the whole script: outfits per story stage, separate assets, assignment and check per slide.
+app.post('/api/projects/:id/outfits/plan', async (req, res) => {
+  await store.getProject(req.params.id);
+  const { storyIdea = '', slides, outfits, assets, characterIds } = req.body || {};
+  if (!Array.isArray(slides) || !slides.length) return res.status(400).json({ error: 'Truyện chưa có ảnh nào' });
+  const characters = (await store.listCharacters()).filter((c) => listOf(characterIds).includes(c.id));
+  const input = {
+    storyIdea: String(storyIdea),
+    slides: slides.map((s) => ({
+      id: String(s?.id || ''),
+      idea: String(s?.idea || ''),
+      locked: Boolean(s?.locked),
+      note: String(s?.note || ''),
+      outfits: s?.outfits && typeof s.outfits === 'object' ? s.outfits : {},
+      frames: listOf(s?.frames).map((f) => ({
+        id: String(f?.id || ''),
+        characterIds: listOf(f?.characterIds).map(String),
+        scene: String(f?.scene || ''),
+        action: String(f?.action || ''),
+        assetIds: listOf(f?.assetIds).map(String),
+      })),
+    })),
+    characters,
+    outfits: listOf(outfits),
+    assets: listOf(assets),
+  };
+  const raw = await planOutfits({ settings: await store.getSettings(), script: outfitPlanInput(input), signal: clientSignal(res) });
+  res.json(normalizeOutfitPlan(raw, input, store.newId));
+});
+
+app.post('/api/flow/resume', (_req, res) => {
+  resumeFlow();
+  res.json({ ok: true });
 });
 
 app.post('/api/projects/:id/images/upload', upload.single('file'), async (req, res) => {

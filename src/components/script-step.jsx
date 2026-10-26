@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
-import { pendingFrames } from '../hooks/use-story-automation.js';
+import { blockedFrames, pendingFrames } from '../hooks/use-story-automation.js';
 import { LAYOUTS, PAGE_SIZES, framesPerLayout, getLayout } from '../lib/layouts.js';
 import { createSlide, fitFrames, hasFrameContent, switchOrientation } from '../lib/story-model.js';
 import { formatDuration } from '../lib/time-estimate.js';
@@ -19,6 +19,7 @@ export default function ScriptStep({
   updateSlide,
   updateFrame,
   onAutomationDone,
+  onReviewOutfits,
 }) {
   const [busy, setBusy] = useState({}); // slideId -> boolean
   const [errors, setErrors] = useState({});
@@ -37,6 +38,7 @@ export default function ScriptStep({
   const plannedFrames = slideCount * (framesPerSlide === 'auto' ? 2 : Number(framesPerSlide));
   const missingImages = pendingFrames(project).filter((e) => !e.frame.selectedImage).length;
   const pending = pendingFrames(project).length;
+  const held = blockedFrames(project).length;
   const anyBusy = automation.running || batchRunning;
 
   // Keep a frame open once it was shown empty, so typing into it does not collapse it.
@@ -57,10 +59,12 @@ export default function ScriptStep({
     if (project.slides.some((s) => s.frames.some(hasFrameContent)) && !confirm('Thay toàn bộ các ảnh hiện có bằng truyện mới?')) return;
     const options = { slideCount, framesPerSlide };
     if (pauseForReview) {
-      automation.writeStory(options);
+      automation.writeStory(options).then((ok) => ok && onReviewOutfits());
       return;
     }
-    const message = `AI sẽ viết ${slideCount} ảnh rồi vẽ khoảng ${plannedFrames} khung, mất ${formatDuration(plannedFrames)} (model ${imageModel}).\nCó thể chuyển tab, nhưng đừng đóng trang.\n\nTiếp tục?`;
+    // Besides the frames, roughly one outfit sheet per character and stage plus a few asset sheets get drawn.
+    const sheets = Math.max(2, project.characterIds.length * 2);
+    const message = `AI sẽ viết ${slideCount} ảnh, lập trang phục theo giai đoạn, vẽ khoảng ${sheets} ảnh mẫu rồi vẽ khoảng ${plannedFrames} khung, mất ${formatDuration(plannedFrames + sheets)} (model ${imageModel}).\nCó thể chuyển tab, nhưng đừng đóng trang.\n\nTiếp tục?`;
     if (!confirm(message)) return;
     automation.runAll(options).then((ok) => ok && onAutomationDone());
   }
@@ -153,7 +157,7 @@ export default function ScriptStep({
           </label>
           <label className="check">
             <input type="checkbox" checked={pauseForReview} onChange={(e) => setPauseForReview(e.target.checked)} />
-            Dừng lại để duyệt kịch bản trước khi vẽ
+            Dừng lại để duyệt kịch bản và trang phục trước khi vẽ
           </label>
           <ImageModelSelect value={imageModel} frames={plannedFrames} disabled={anyBusy} onChange={changeImageModel} />
         </div>
@@ -164,6 +168,11 @@ export default function ScriptStep({
           {pending > 0 && (
             <button disabled={anyBusy} onClick={resumeAutomation}>
               🎨 {missingImages ? `Vẽ ${missingImages} khung còn thiếu & đặt thoại` : `Đặt thoại cho ${pending} khung`}
+            </button>
+          )}
+          {held > 0 && (
+            <button disabled={anyBusy} onClick={onReviewOutfits}>
+              🧥 {held} khung chờ xác nhận trang phục
             </button>
           )}
         </div>
@@ -178,8 +187,9 @@ export default function ScriptStep({
         )}
         {automation.error && <p className="error small">{automation.error}</p>}
         <p className="muted small">
-          AI viết cả truyện, vẽ từng khung, rồi nhìn ảnh để đặt bóng thoại. Xong sẽ chuyển sang bước 3: nhấp đúp bóng thoại để sửa chữ, kéo để đổi
-          vị trí. Sau đó bước 4 để duyệt và đăng.
+          AI viết cả truyện, lập trang phục cho từng giai đoạn và tự xác nhận ảnh nào khớp kịch bản, vẽ ảnh mẫu trang phục và đồ vật bằng Google
+          Flow, vẽ từng khung, rồi nhìn ảnh để đặt bóng thoại. Ảnh AI thấy chưa khớp sẽ chờ bạn xác nhận ở bước 2. Xong sẽ chuyển sang bước 4: nhấp
+          đúp bóng thoại để sửa chữ, kéo để đổi vị trí. Sau đó bước 5 để duyệt và đăng.
         </p>
       </section>
 

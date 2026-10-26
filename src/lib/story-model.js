@@ -10,6 +10,7 @@ export const createFrame = (patch = {}) => ({
   expression: '',
   characterIds: [],
   positions: {},
+  assetIds: [],
   dialogues: [],
   prompt: '',
   images: [],
@@ -20,7 +21,7 @@ export const createFrame = (patch = {}) => ({
 
 export function createSlide(orientation, layoutId) {
   const layout = getLayout(orientation, layoutId);
-  return { id: uid(), idea: '', layoutId: layout.id, frames: fitFrames([], layout) };
+  return { id: uid(), idea: '', layoutId: layout.id, frames: fitFrames([], layout), outfits: {}, outfitCheck: null };
 }
 
 const LAYOUT_BY_COUNT = {
@@ -93,5 +94,17 @@ export function migrateProject(project) {
       slides.push({ id: uid(), idea: '', layoutId: layout.id, frames: fitFrames(panels.slice(i, i + size), layout) });
     }
   }
-  return { ...rest, usePrevFrameRef, slides: slides.map((s) => ({ ...s, frames: s.frames.map(dropClock) })) };
+  return {
+    ...rest,
+    usePrevFrameRef,
+    outfits: rest.outfits || [],
+    assets: rest.assets || [],
+    outfitsPlannedAt: rest.outfitsPlannedAt || null,
+    slides: slides.map((s) => ({
+      ...s,
+      outfits: s.outfits || {},
+      outfitCheck: s.outfitCheck || null,
+      frames: s.frames.map((f) => ({ ...dropClock(f), assetIds: f.assetIds || [] })),
+    })),
+  };
 }

@@ -1,5 +1,6 @@
 // Builds the image prompt for a frame. Fixed character descriptions are injected every time so frames stay consistent.
 import { characterRefName } from './ref-names.js';
+import { frameSheets } from './outfits.js';
 
 const POSITION_LABEL = { left: 'LEFT', center: 'CENTER', right: 'RIGHT' };
 const POSITION_ORDER = { left: 0, center: 1, right: 2 };
@@ -43,5 +44,24 @@ export function buildFramePrompt(project, slide, frame, characters) {
     'Composition: cinematic framing, characters clearly visible, leave calm empty space near the top for speech bubbles added later.',
     'IMPORTANT: do NOT draw any text, letters, numbers, speech bubbles, captions, signatures or watermarks.',
   );
+  return lines.join('\n');
+}
+
+/**
+ * Clothing and assets of the slide's story stage, appended to the prompt when the frame is drawn (never stored in the
+ * editable prompt), so a changed outfit or asset always reaches the next drawing.
+ */
+export function buildSheetNotes(project, slide, frame, characters) {
+  const { outfits, assets } = frameSheets(project, slide, frame);
+  const nameOf = (id) => characters.find((c) => c.id === id)?.name || '';
+  const lines = [];
+  if (outfits.length) {
+    lines.push('CLOTHING for this story stage. It replaces any clothing or accessory mentioned in the traits or descriptions above:');
+    outfits.forEach((o) => lines.push(`- ${nameOf(o.characterId)} wears "${o.name}": ${o.description}`));
+  }
+  if (assets.length) {
+    lines.push('Props and places in this panel (draw them exactly like their reference images):');
+    assets.forEach((a) => lines.push(`- ${a.kind === 'place' ? 'Place' : 'Prop'} "${a.name}": ${a.description}`));
+  }
   return lines.join('\n');
 }

@@ -53,16 +53,17 @@ test('gflowFailure reads the --json error envelope and only a missing project cl
   assert.equal(gflowFailure('not json', '{"level":"error","message":"boom"}').text, 'boom');
 });
 
-test('pickRefs keeps every first character image and the previous panel before extra images', () => {
+test('pickRefs keeps the 10 lowest priorities and the given order on ties', () => {
   const refs = [
-    ...[1, 2, 3, 4].map((n) => ({ name: `char-a-${n}.png` })),
-    ...[1, 2, 3, 4].map((n) => ({ name: `char-b-${n}.png` })),
-    ...[1, 2, 3, 4].map((n) => ({ name: `char-c-${n}.png` })),
-    { name: 'previous-panel.jpg' },
+    ...[1, 2, 3, 4].map((n) => ({ name: `a-${n}`, priority: n === 1 ? 1 : 6 })),
+    ...[1, 2, 3, 4].map((n) => ({ name: `b-${n}`, priority: n === 1 ? 1 : 6 })),
+    ...[1, 2, 3, 4].map((n) => ({ name: `c-${n}`, priority: n === 1 ? 1 : 6 })),
+    { name: 'previous', priority: 5 },
+    { name: 'outfit-a', priority: 0 },
   ];
   const names = pickRefs(refs).map((r) => r.name);
   assert.equal(names.length, 10);
-  assert.deepEqual(names.slice(0, 4), ['char-a-1.png', 'char-b-1.png', 'char-c-1.png', 'previous-panel.jpg']);
-  assert.ok(!names.includes('char-a-4.png'));
+  assert.deepEqual(names.slice(0, 5), ['outfit-a', 'a-1', 'b-1', 'c-1', 'previous']);
+  assert.ok(!names.includes('c-4'));
   assert.equal(pickRefs(refs.slice(0, 2)).length, 2);
 });
