@@ -1,6 +1,6 @@
 # StoryTools
 
-Tool chạy trên máy bạn, biến một cốt truyện thành bộ ảnh truyện tranh có lời thoại tiếng Việt, sẵn sàng đăng TikTok hoặc YouTube. AI (qua agy CLI) viết kịch bản và vẽ ảnh; chữ được chèn bằng code nên không bao giờ sai dấu.
+Tool chạy trên máy bạn, biến một cốt truyện thành bộ ảnh truyện tranh có lời thoại tiếng Việt, sẵn sàng đăng TikTok hoặc YouTube. AI viết kịch bản và lập trang phục qua agy CLI, vẽ ảnh qua Google Flow (gflow-cli, agy làm dự phòng); chữ được chèn bằng code nên không bao giờ sai dấu.
 
 - Giao diện: `http://127.0.0.1:5173`
 - Khổ ảnh: dọc 9:16 (TikTok/Shorts) và ngang 16:9 (YouTube)
@@ -15,7 +15,8 @@ Bản hướng dẫn có giao diện đẹp hơn: [`docs/huong-dan-su-dung.html`
 - [Truyện, Ảnh, Khung](#truyện-ảnh-khung)
 - [Nhân vật](#nhân-vật)
 - [Tạo truyện tự động](#tạo-truyện-tự-động)
-- [Bốn bước thủ công](#bốn-bước-thủ-công)
+- [Năm bước thủ công](#năm-bước-thủ-công)
+- [Trang phục theo giai đoạn](#trang-phục-theo-giai-đoạn)
 - [Chỉnh bóng thoại](#chỉnh-bóng-thoại)
 - [Duyệt và đăng TikTok](#duyệt-và-đăng-tiktok)
 - [Thời gian và model](#thời-gian-và-model)
@@ -32,6 +33,7 @@ Yêu cầu:
 
 - Node.js 22 trở lên. Chạy được trên Windows và macOS.
 - **agy CLI** (Google Antigravity) đã cài và đăng nhập: gõ `agy --version` trong terminal phải in ra phiên bản. Tool dùng gói đăng ký của bạn, không cần khoá riêng hay bật thanh toán theo lượt.
+- **gflow-cli** đã cài và đăng nhập Google Flow để vẽ ảnh (xem [Vẽ ảnh qua Google Flow](#vẽ-ảnh-qua-google-flow)). Thiếu gflow thì tool vẫn chạy, ảnh vẽ bằng agy dự phòng.
 
 ```bash
 npm install
@@ -67,10 +69,10 @@ Ba mức này quyết định mọi thao tác còn lại, nên nắm trước kh
 Đây là phần quyết định truyện có đồng nhất hay không, nên làm kỹ trước khi tạo truyện. Vào tab **Nhân vật**, bấm **+ Thêm nhân vật** và điền:
 
 - **Tên**: dùng đúng tên này khi viết cốt truyện để AI gán vai chính xác.
-- **Mô tả cố định**: tuổi, kiểu tóc, màu mắt, trang phục, phụ kiện. Càng cụ thể càng ổn định. Ví dụ: *cậu bé 13 tuổi, tóc đen rối xù, áo polo vàng mù tạt, tạp dề xanh rêu, giày vải đỏ*.
-- **Ảnh tham chiếu**: 1–3 ảnh rõ mặt, nền đơn giản. Mọi lần vẽ đều gửi kèm các ảnh này.
+- **Mô tả cố định**: những nét không đổi như tuổi, dáng người, kiểu tóc, màu mắt, màu da. Càng cụ thể càng ổn định. Ví dụ: *cậu bé 13 tuổi, dáng gầy, tóc đen rối xù, mắt to nâu*. Không cần ghi quần áo: trang phục do từng truyện quy định theo giai đoạn ở bước 2.
+- **Ảnh tham chiếu**: 1–3 ảnh rõ mặt, nền đơn giản. Ảnh đầu tiên giữ khuôn mặt khi vẽ ảnh mẫu trang phục và khi vẽ khung.
 
-Sau khi thêm ảnh mẫu, AI đọc ảnh một lần và điền ô **Đặc điểm nhận dạng** (tóc, kính, trang phục kèm màu…). Sửa tay được; bấm **Rút lại** để AI đọc lại. Đặc điểm này giúp AI vẽ không trộn người này với người kia trong khung có nhiều nhân vật.
+Sau khi thêm ảnh mẫu, AI đọc ảnh một lần và điền ô **Đặc điểm nhận dạng** (tóc, mắt, da, kính…, không gồm quần áo). Sửa tay được; bấm **Rút lại** để AI đọc lại. Đặc điểm này giúp AI vẽ không trộn người này với người kia trong khung có nhiều nhân vật.
 
 Mô tả được chèn tự động vào prompt của mọi khung có nhân vật đó, nên không cần nhắc lại khi viết kịch bản.
 
@@ -80,25 +82,45 @@ Cách nhanh nhất: chỉ nhập cốt truyện, phần còn lại tool tự ch�
 
 1. **Nhập cốt truyện.** Viết vài câu về diễn biến và cái kết, gọi nhân vật đúng tên. Chọn **số ảnh** (1–35) và **khung mỗi ảnh**: cố định 1–4, hoặc để AI tự chọn 1–3 tuỳ cảnh.
 2. **Xem thời gian ước tính.** Bên cạnh dropdown **Model vẽ ảnh** là thời gian cho cả truyện, ví dụ *≈ ~15 phút cho 10 khung*. Đổi model ở đây là lưu luôn cho cả tool.
-3. **Bấm Tự động tạo cả truyện.** Tool hỏi xác nhận kèm thời gian ước tính, rồi chạy tuần tự: AI viết toàn bộ kịch bản trong một lần gọi, vẽ từng khung (gửi kèm ảnh khung trước để giữ phong cách), sau đó nhìn ảnh vừa vẽ để đặt bóng thoại vào vùng trống và chỉnh câu thoại cho khớp biểu cảm. Muốn đọc kịch bản trước khi mất thời gian vẽ thì tick **Dừng lại để duyệt kịch bản trước khi vẽ**.
-4. **Duyệt kết quả.** Chạy xong tool tự chuyển sang bước 3 để bạn sửa lời thoại và vị trí bóng, rồi sang bước 4 để đăng.
+3. **Bấm Tự động tạo cả truyện.** Tool hỏi xác nhận kèm thời gian ước tính, rồi chạy tuần tự:
+   1. AI viết toàn bộ kịch bản trong một lần gọi.
+   2. AI lập [trang phục theo giai đoạn](#trang-phục-theo-giai-đoạn), tách đồ vật và bối cảnh thành asset riêng, rồi tự xác nhận những ảnh có trang phục khớp kịch bản. Ảnh chưa khớp được AI sửa thêm một lượt; vẫn chưa khớp thì ảnh đó chờ bạn xác nhận ở bước 2.
+   3. Trước mỗi khung, tool vẽ ảnh mẫu trang phục và asset còn thiếu, rồi vẽ khung bằng Google Flow (gửi kèm ảnh mẫu, ảnh nhân vật và ảnh khung trước để giữ phong cách).
+   4. AI nhìn ảnh vừa vẽ để đặt bóng thoại vào vùng trống và chỉnh câu thoại cho khớp biểu cảm.
+
+   Muốn đọc kịch bản và trang phục trước khi mất thời gian vẽ thì tick **Dừng lại để duyệt kịch bản và trang phục trước khi vẽ**: viết xong, tool chuyển sang bước 2 để bạn xác nhận.
+4. **Duyệt kết quả.** Chạy xong tool tự chuyển sang bước 4 để bạn sửa lời thoại và vị trí bóng, rồi sang bước 5 để đăng.
 
 Đang chạy có thể bấm **Dừng**: tool huỷ ngay khung đang vẽ, không chờ xong. Phần dở dang chạy tiếp bằng nút **Vẽ N khung còn thiếu & đặt thoại**. Chuyển giữa các bước trong cùng truyện thì tiến trình vẫn chạy, thanh tiến trình hiện trên đầu trang; còn quay về danh sách truyện thì phần đang chạy bị huỷ.
 
-Nếu có khung không đặt được lời thoại tự động, tool ghi tên các khung đó dưới nút chạy. Lần chạy tiếp sẽ thử lại (thay bóng thoại mẫu của khung đó), hoặc bấm **✨ AI đặt thoại** ở bước 3. Khung nào bạn đã tự sửa bóng thoại thì không bị thử lại nữa.
+Nếu có khung không đặt được lời thoại tự động, tool ghi tên các khung đó dưới nút chạy. Lần chạy tiếp sẽ thử lại (thay bóng thoại mẫu của khung đó), hoặc bấm **✨ AI đặt thoại** ở bước 4. Khung nào bạn đã tự sửa bóng thoại thì không bị thử lại nữa.
 
-## Bốn bước thủ công
+## Năm bước thủ công
 
-Khi muốn kiểm soát từng ảnh, làm lần lượt bốn bước trong trang soạn truyện.
+Khi muốn kiểm soát từng ảnh, làm lần lượt năm bước trong trang soạn truyện.
 
 1. **Kịch bản.** Chọn khổ ảnh, phong cách vẽ và dàn nhân vật. Bấm **+ Thêm ảnh thủ công** cho từng ảnh, nhập ý tưởng, chọn bố cục rồi bấm **✨ AI viết N khung**. Sửa lại bối cảnh, hành động, biểu cảm, lời thoại của từng khung nếu cần.
-2. **Prompt & ảnh.** Prompt tự ghép từ phong cách, ý tưởng ảnh, mô tả nhân vật và nội dung khung; sửa tay được. Vẽ từng khung bằng **Tạo ảnh** hoặc vẽ hàng loạt các khung còn thiếu. Mỗi lần vẽ lại đều được giữ, bấm thumbnail để chọn bản ưng ý. Có sẵn nút tải ảnh ngoài lên nếu bạn tự vẽ.
-3. **Lời thoại & ghép.** Chọn từng ảnh để xem bản ghép thật. Bóng thoại tự đặt từ lời thoại trong kịch bản; chỉnh bằng chuột theo bảng bên dưới. Ảnh nhiều khung được ghép có viền, ảnh 1 khung giữ tràn ảnh.
-4. **Duyệt & đăng.** Lướt toàn bộ truyện như carousel, viết caption, rồi chuyển ảnh sang điện thoại để đăng.
+2. **Trang phục.** Bấm **🧥 AI lập trang phục & đồ vật**, xem lại từng bộ trang phục và asset, vẽ ảnh mẫu, rồi xác nhận trang phục của từng ảnh (xem mục dưới).
+3. **Prompt & ảnh.** Prompt tự ghép từ phong cách, ý tưởng ảnh, mô tả nhân vật và nội dung khung; sửa tay được. Trang phục và asset của khung luôn được thêm vào lúc vẽ, nên sửa trang phục không cần sửa prompt. Vẽ từng khung bằng **Tạo ảnh** hoặc vẽ hàng loạt các khung còn thiếu; ảnh chưa xác nhận trang phục thì chưa vẽ được. Mỗi lần vẽ lại đều được giữ, bấm thumbnail để chọn bản ưng ý. Có sẵn nút tải ảnh ngoài lên nếu bạn tự vẽ.
+4. **Lời thoại & ghép.** Chọn từng ảnh để xem bản ghép thật. Bóng thoại tự đặt từ lời thoại trong kịch bản; chỉnh bằng chuột theo bảng bên dưới. Ảnh nhiều khung được ghép có viền, ảnh 1 khung giữ tràn ảnh.
+5. **Duyệt & đăng.** Lướt toàn bộ truyện như carousel, viết caption, rồi chuyển ảnh sang điện thoại để đăng.
+
+## Trang phục theo giai đoạn
+
+Nhân vật hay bị vẽ lệch đồ (đeo ba lô trong bếp, tạp dề lúc có lúc không) khi quần áo nằm trong mô tả nhân vật. Bước 2 tách chúng ra:
+
+- **Trang phục**: AI đọc cả kịch bản, chia truyện thành các giai đoạn (đi học, ở nhà, đi ngủ…) và cho mỗi nhân vật một bộ cố định trong từng giai đoạn. Bộ trang phục chỉ gồm thứ mặc liên tục suốt giai đoạn. Mỗi bộ có **ảnh mẫu**: Google Flow vẽ nhân vật (lấy mặt từ ảnh tham chiếu) mặc đúng bộ đó, chính diện, nghiêng và sau lưng trên nền trắng.
+- **Đồ vật và bối cảnh (asset)**: thứ xuất hiện ở nhiều khung nhưng không liên tục (ba lô, tạp dề, chiếc xe đạp, căn bếp…) được tách thành ảnh mẫu riêng và chỉ gắn vào khung có nó. Thứ chỉ xuất hiện một lần vẫn để trong mô tả khung.
+- **Xác nhận từng ảnh**: mỗi ảnh hiện trang phục của từng nhân vật kèm ảnh mẫu, asset của từng khung và nhận xét của AI. Bấm **Xác nhận trang phục khớp kịch bản** cho từng ảnh, hoặc **✓ Xác nhận N ảnh AI báo khớp**. Sửa bối cảnh, hành động, dàn nhân vật, asset hay mô tả trang phục sau khi xác nhận thì ảnh đó phải xác nhận lại; sửa lời thoại thì không.
+- **🔍 AI kiểm tra lại trang phục**: chạy lại lượt AI sau khi sửa kịch bản. Ảnh đã xác nhận được giữ nguyên trang phục.
+
+Khi vẽ khung, tool gửi tối đa 10 ảnh tham chiếu theo thứ tự ưu tiên: ảnh mẫu trang phục của từng nhân vật, ảnh mặt của từng nhân vật (chỉ lấy mặt, bỏ quần áo), bối cảnh, đồ vật, rồi ảnh khung trước. Khung đầu của ảnh mà nhân vật vừa đổi đồ thì không gửi ảnh khung trước, để bộ cũ không bị kéo sang. Ảnh mẫu nào vẽ bằng agy dự phòng hoặc có mô tả đã đổi sẽ có nhãn nhắc vẽ lại.
+
+Truyện tạo trước khi có tính năng này vẫn vẽ như cũ cho đến khi bạn bấm **AI lập trang phục & đồ vật**.
 
 ## Chỉnh bóng thoại
 
-Toàn bộ thao tác nằm trên khung tranh ở bước 3.
+Toàn bộ thao tác nằm trên khung tranh ở bước 4.
 
 | Thao tác | Kết quả |
 | --- | --- |
@@ -114,7 +136,7 @@ Sửa lời thoại ở bước 1 sẽ đặt lại bóng thoại của khung đ
 
 ## Duyệt và đăng TikTok
 
-Bước 4 gom mọi thứ cần cho một bài đăng. Phía trên là carousel xem lại cả truyện, dùng phím `←` `→` để lướt.
+Bước 5 gom mọi thứ cần cho một bài đăng. Phía trên là carousel xem lại cả truyện, dùng phím `←` `→` để lướt.
 
 **Caption và nhạc.** Bấm **✨ AI viết caption** để có tiêu đề (tối đa 90 ký tự), caption, hashtag, gợi ý mood nhạc và từ khoá tìm nhạc. Có nút copy riêng cho tiêu đề và cho caption kèm hashtag. Trạng thái **Nháp / Đã duyệt / Đã đăng** hiện luôn ở danh sách truyện.
 
@@ -137,26 +159,26 @@ Lần đầu bấm chia sẻ Wi-Fi, máy sẽ hỏi quyền mạng cho Node.js. 
 
 ## Thời gian và model
 
-Tool không tính tiền theo lượt gọi: mọi tác vụ AI chạy qua agy CLI bằng quota của gói đăng ký đang đăng nhập. Đổi lại, vẽ ảnh chậm hơn gọi API trực tiếp.
+Tool không tính tiền theo lượt gọi: ảnh vẽ bằng hạn mức ảnh của Google Flow, phần viết chạy qua agy CLI bằng quota của gói đăng ký đang đăng nhập. Đổi lại, vẽ ảnh chậm hơn gọi API trực tiếp.
 
 | Việc | Thời gian một lần |
 | --- | --- |
-| Vẽ một khung | ~75 giây |
+| Vẽ một khung (Google Flow, kèm ảnh mẫu) | ~1,5 phút |
+| Vẽ một ảnh mẫu trang phục / asset | ~1–1,5 phút |
 | Đặt lời thoại cho một khung | ~15 giây |
-| Viết kịch bản cả truyện, viết caption | 15–60 giây |
+| Viết kịch bản cả truyện, lập trang phục, viết caption | 15 giây – 3 phút |
 
-Truyện 10 khung mất khoảng 15 phút; 35 ảnh × 2 khung mất khoảng 1 giờ 45 phút. Các khung được vẽ lần lượt vì mỗi khung gửi kèm ảnh khung trước để giữ phong cách.
+Truyện 10 khung mất khoảng 20–25 phút tính cả ảnh mẫu. Các khung được vẽ lần lượt vì mỗi khung gửi kèm ảnh khung trước để giữ phong cách, và một trình duyệt Flow chỉ vẽ được một ảnh một lúc.
 
-Tab **Cài đặt** có hai ô, danh sách gợi ý lấy từ lệnh `agy models`:
+Tab **Cài đặt** có ba ô:
 
-- **Model viết kịch bản, caption, đặt lời thoại**: mặc định `gemini-4-argon-medium`. Chọn `gemini-3.8-flash-low` nếu muốn nhanh hơn.
-- **Model vẽ ảnh**: mặc định `agy · gemini-3.8-flash-low`. Với model agy, agy tự chọn model vẽ thật; ô này chỉ chọn model điều khiển việc vẽ. Khi đã cài gflow-cli, danh sách có thêm **Google Flow · Nano Banana 2** và **Google Flow · Nano Banana Pro** (xem dưới).
+- **Model vẽ ảnh**: **Google Flow · Nano Banana 2** (mặc định) hoặc **Google Flow · Nano Banana Pro**. Mọi ảnh vẽ bằng model này.
+- **Model viết kịch bản, trang phục, caption, đặt lời thoại**: mặc định `gemini-4-argon-medium`, gợi ý lấy từ lệnh `agy models`. Chọn `gemini-3.8-flash-low` nếu muốn nhanh hơn.
+- **Model agy vẽ dự phòng**: mặc định `gemini-3.8-flash-low`. Chỉ dùng khi gflow chưa cài hoặc vừa lỗi.
 
-Hết quota thì agy báo lỗi; chờ quota hồi rồi bấm vẽ tiếp phần còn thiếu.
+### Vẽ ảnh qua Google Flow
 
-### Vẽ ảnh qua Google Flow (tuỳ chọn)
-
-[gflow-cli](https://github.com/ffroliva/gflow-cli) gửi prompt và ảnh mẫu thẳng tới Google Flow (model Nano Banana) bằng tài khoản Google của bạn, không qua vòng tác tử của agy. Ảnh dùng hạn mức ảnh riêng của Flow, tách khỏi quota của agy. Viết kịch bản, đặt lời thoại và caption vẫn chạy bằng agy.
+[gflow-cli](https://github.com/ffroliva/gflow-cli) gửi prompt và ảnh mẫu thẳng tới Google Flow (model Nano Banana) bằng tài khoản Google của bạn, không qua vòng tác tử của agy. Ảnh dùng hạn mức ảnh riêng của Flow, tách khỏi quota của agy. Viết kịch bản, lập trang phục, đặt lời thoại và caption vẫn chạy bằng agy.
 
 ```bash
 uv tool install gflow-cli                                    # cần uv: https://docs.astral.sh/uv/
@@ -164,16 +186,19 @@ uv tool run --from gflow-cli playwright install chromium     # một lần, kho�
 gflow auth login --browser chrome                            # đăng nhập Google trong cửa sổ Chrome hiện ra
 ```
 
-Khởi động lại server, rồi chọn model **Google Flow · …** ở tab Cài đặt hoặc ngay ở bước 1/2. Mỗi khung mất khoảng 1,5–2 phút; lần đầu tool tạo sẵn một project "StoryTools" trên Flow và dùng lại cho các lần sau. Biến `GFLOW_BIN` (đường dẫn lệnh gflow) và `GFLOW_PROFILE` (tên profile đăng nhập) đặt trong `.env` nếu cần; đặt `GFLOW_PROFILE` thì đăng nhập bằng `gflow auth login --browser chrome --profile <tên>`. Mỗi khung gflow mở một cửa sổ Chrome: đừng đóng nó khi đang vẽ. Mỗi khung nhận tối đa 10 ảnh mẫu; nhiều hơn thì tool giữ ảnh đầu của từng nhân vật và khung trước.
+Khởi động lại server. Lần đầu tool tạo sẵn một project "StoryTools" trên Flow và dùng lại cho các lần sau; project đó bị xoá thì tool tự tạo project mới. Biến `GFLOW_BIN` (đường dẫn lệnh gflow) và `GFLOW_PROFILE` (tên profile đăng nhập) đặt trong `.env` nếu cần; đặt `GFLOW_PROFILE` thì đăng nhập bằng `gflow auth login --browser chrome --profile <tên>`. Mỗi khung gflow mở một cửa sổ Chrome: đừng đóng nó khi đang vẽ. Mỗi khung nhận tối đa 10 ảnh tham chiếu, chọn theo thứ tự ưu tiên ở mục [Trang phục theo giai đoạn](#trang-phục-theo-giai-đoạn).
+
+**agy dự phòng.** Khi gflow chưa cài hoặc lỗi, ảnh đó được vẽ bằng agy và tool ghi lý do dưới khung. Lỗi riêng của một prompt (nội dung bị chặn) chỉ chuyển sang agy cho lần đó. Lỗi chung (quá giờ, Flow giới hạn tốc độ) thì tool nghỉ gflow 10 phút. Phiên đăng nhập hết hạn hoặc hết hạn mức Flow thì tool dùng agy cho đến khi bạn đăng nhập lại và bấm **Thử lại Flow** ở tab Cài đặt (hoặc khởi động lại server).
 
 gflow-cli không phải công cụ chính thức của Google: nó điều khiển một cửa sổ Chrome thật bằng tài khoản của bạn, có thể hỏng khi Google đổi giao diện Flow, và việc tự động hoá thuộc trách nhiệm của chủ tài khoản theo điều khoản của Google.
 
 ## Mẹo giữ nhân vật
 
 - Ảnh tham chiếu nên chụp rõ mặt, đủ sáng, nền đơn giản, và cùng một phong cách vẽ với truyện.
-- Giữ bật tuỳ chọn **Gửi kèm ảnh khung trước** ở bước 2: khung sau bám theo màu sắc và nét vẽ của khung trước.
-- Mô tả nhân vật nên nói về đặc điểm không đổi (tóc, dáng người, trang phục thường ngày), còn cảm xúc và tư thế để phần biểu cảm và hành động của từng khung lo.
-- Kịch bản AI viết ghi sẵn ai đứng trái, giữa, phải. Khung đã vẽ trước bản này vẫn giữ prompt cũ; bấm **Tạo lại prompt từ kịch bản** ở bước 2 để dùng cách ghép prompt mới.
+- Giữ bật tuỳ chọn **Gửi kèm ảnh khung trước** ở bước 3: khung sau bám theo màu sắc và nét vẽ của khung trước.
+- Mô tả nhân vật chỉ nói về đặc điểm không đổi (tóc, dáng người, khuôn mặt); quần áo để bước 2 lo, cảm xúc và tư thế để phần biểu cảm và hành động của từng khung lo.
+- Ảnh mẫu trang phục là thứ quyết định nhân vật mặc gì trong mọi khung của giai đoạn đó: xem kỹ và vẽ lại nếu chưa ưng trước khi vẽ khung.
+- Kịch bản AI viết ghi sẵn ai đứng trái, giữa, phải. Khung đã vẽ trước bản này vẫn giữ prompt cũ; bấm **Tạo lại prompt từ kịch bản** ở bước 3 để dùng cách ghép prompt mới.
 - Khung nào lệch nhân vật thì bấm **Tạo lại** riêng khung đó, lịch sử ảnh cũ vẫn được giữ để quay về.
 - Muốn có đồng hồ hay mốc thời gian thì ghi thẳng vào bối cảnh hoặc prompt; tool không còn trường giờ riêng vì AI hay vẽ đồng hồ thừa.
 
@@ -182,9 +207,10 @@ gflow-cli không phải công cụ chính thức của Google: nó điều khi�
 | Hiện tượng | Cách xử lý |
 | --- | --- |
 | Cảnh báo *"Không tìm thấy agy CLI"* | Cài agy và đăng nhập, đặt `AGY_BIN` trong `.env` nếu agy không nằm trong PATH, rồi khởi động lại server |
-| *"agy: không tạo được ảnh"* | Có thể đã hết quota hoặc nội dung bị chặn. Sửa câu mô tả ở bước 2, hoặc chờ quota hồi rồi tạo lại khung đó |
+| *"agy: không tạo được ảnh"* | Có thể đã hết quota hoặc nội dung bị chặn. Sửa câu mô tả ở bước 3, hoặc chờ quota hồi rồi tạo lại khung đó |
 | *"agy: quá …s không xong"* | agy treo hoặc quá chậm. Bấm vẽ lại khung đó |
-| *"gflow: không tạo được ảnh"* | Chạy `gflow auth status`; nếu phiên hết hạn thì `gflow auth login` lại. Có thể đã hết hạn mức ảnh của Flow: đổi sang model agy hoặc chờ |
+| *"gflow: không tạo được ảnh"* hoặc *"Vẽ bằng agy dự phòng: …"* | Đọc lý do đi kèm. Phiên hết hạn thì chạy `gflow auth login --browser chrome` lại; hết hạn mức thì chờ. Xong bấm **Thử lại Flow** ở tab Cài đặt |
+| Nút **Tạo ảnh** bị mờ, ghi *"Trang phục chưa xác nhận"* | Vào bước 2, sửa trang phục nếu cần và bấm **Xác nhận trang phục khớp kịch bản** cho ảnh đó |
 | *"gflow: không tìm thấy lệnh gflow"* | Cài gflow-cli như hướng dẫn ở trên, hoặc đặt `GFLOW_BIN` trong `.env`, rồi khởi động lại server |
 | *"agy: trả về sai định dạng"* | Model trả lời không đúng JSON. Bấm lại; nếu lặp lại nhiều lần, đổi model viết kịch bản trong Cài đặt |
 | Điện thoại không mở được mã QR | Kiểm tra hai máy cùng Wi-Fi, cho phép Node.js qua tường lửa ở mạng Private, và thử địa chỉ khác trong danh sách (bỏ qua các adapter vEthernet, WSL) |
@@ -208,13 +234,17 @@ Node + Express ở backend, React (Vite) ở frontend, không cần Python.
 server/
   index.js        API routes
   storage.js      đọc ghi file trong data/
-  agy.js          gọi AI qua agy CLI: kịch bản, vẽ ảnh, đặt lời thoại, caption
-  agy-runner.js   chạy agy: thư mục làm việc riêng, giới hạn song song, timeout, huỷ
+  agy.js          gọi AI qua agy CLI: kịch bản, trang phục, vẽ ảnh dự phòng, đặt lời thoại, caption
+  agy-runner.js   chạy CLI (agy, gflow): thư mục làm việc riêng, giới hạn song song, timeout, huỷ
+  gflow.js        vẽ ảnh qua Google Flow bằng gflow-cli
+  image-engine.js chọn gflow hay agy dự phòng cho mỗi ảnh
+  frame-refs.js   ảnh tham chiếu của một khung theo thứ tự ưu tiên
+  outfit-plan.js  dữ liệu vào/ra của lượt AI lập trang phục
   *.test.js       test chạy bằng npm test
   lan-share.js    trang chia sẻ qua Wi-Fi kèm mã QR
 src/
-  lib/            story-model, layouts, render-slide, bubbles, prompt-builder, export
-  components/     các màn hình: nhân vật, kịch bản, prompt & ảnh, ghép, duyệt & đăng
+  lib/            story-model, outfits, layouts, render-slide, bubbles, prompt-builder, export
+  components/     các màn hình: nhân vật, kịch bản, trang phục, prompt & ảnh, ghép, duyệt & đăng
   hooks/          autosave, pipeline tự động tạo truyện
 docs/             hướng dẫn sử dụng
 ```
