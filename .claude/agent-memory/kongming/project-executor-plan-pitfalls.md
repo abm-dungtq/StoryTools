@@ -11,4 +11,8 @@ Pre-commit reviews: compare `ls --time-style=full-iso` mtimes of src files again
 
 **Why:** Reviewed plan `plans/261023-1453-character-consistency-prompts` on 2026-10-23 and the UI polish diff on 2026-10-25; these were the concrete defects found. User prefers Vietnamese-language output with mechanically decidable Verify steps.
 
-**How to apply:** Check these items first; verify test counts by running `npm test` (19 tests as of 2026-10-25).
+gflow-cli 0.90.0 (installed at `~/AppData/Roaming/uv/tools/gflow-cli/Lib/site-packages/gflow_cli`): with `--json` the failure envelope `{status:"fail", error:{title, detail, remediation_hint, class, exit_code, retryable}}` goes to STDOUT; stderr only carries structlog JSON (`event:"error_raised"`). Exit codes: 3 auth expired, 4 rate limit, 5 content policy, 8 auth missing, 11 config (project-not-found has `reason=project` in detail; ProfileLocked is also 11), 37 insufficient credits. Spike `out-reuse/` dirs held signed `fife_url`s and were not covered by `.gitignore` (2026-10-26).
+
+Outfits/assets feature review (2026-10-26): agy hit "Individual quota reached, resets in 148h" that day, so the costume-director endpoint (`/outfits/plan`) was only verified via `E2E_MANUAL=1` (no live LLM run). Recurring defect class here: long AI calls (planner up to 420 s) whose result is merged with `update(cur => …)` but overwrites whole lists (outfits/assets) while the UI leaves inputs/draw buttons enabled — check merge-vs-replace first.
+
+**How to apply:** Check these items first; verify test counts by running `npm test` (38 tests as of 2026-10-26).
