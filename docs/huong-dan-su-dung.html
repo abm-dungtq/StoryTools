@@ -364,7 +364,7 @@ npm test        <span class="cmt"># test phía server</span></code></pre>
         </li>
         <li>
           <h3>Xem thời gian ước tính</h3>
-          <p>Bên cạnh dropdown <strong>Model điều khiển vẽ ảnh (agy)</strong> là thời gian cho cả truyện, ví dụ <em>≈ ~15 phút cho 10 khung</em>. Đổi model ở đây là lưu luôn cho cả tool.</p>
+          <p>Bên cạnh dropdown <strong>Model vẽ ảnh</strong> là thời gian cho cả truyện, ví dụ <em>≈ ~15 phút cho 10 khung</em>. Đổi model ở đây là lưu luôn cho cả tool.</p>
         </li>
         <li>
           <h3>Bấm Tự động tạo cả truyện</h3>
@@ -479,8 +479,15 @@ npm test        <span class="cmt"># test phía server</span></code></pre>
       <p>Tab <strong>Cài đặt</strong> có hai ô, danh sách gợi ý lấy từ lệnh <code>agy models</code>:</p>
       <ul>
         <li><strong>Model viết kịch bản, caption, đặt lời thoại</strong>: mặc định <code>gemini-4-argon-medium</code>. Chọn <code>gemini-3.8-flash-low</code> nếu muốn nhanh hơn.</li>
-        <li><strong>Model điều khiển vẽ ảnh (agy)</strong>: mặc định <code>gemini-3.8-flash-low</code>. agy tự chọn model vẽ thật; ô này chỉ chọn model điều khiển việc vẽ.</li>
+        <li><strong>Model vẽ ảnh</strong>: mặc định <code>agy · gemini-3.8-flash-low</code>. Với model agy, agy tự chọn model vẽ thật; ô này chỉ chọn model điều khiển việc vẽ.</li>
       </ul>
+      <p>
+        Muốn vẽ thẳng qua Google Flow (Nano Banana), dùng hạn mức ảnh riêng của Flow: cài
+        <a href="https://github.com/ffroliva/gflow-cli">gflow-cli</a> (<code>uv tool install gflow-cli</code>, rồi
+        <code>uv tool run --from gflow-cli playwright install chromium</code>), chạy <code>gflow auth login --browser chrome</code>, khởi động lại server
+        và chọn model <strong>Google Flow · Nano Banana 2</strong> hoặc <strong>Pro</strong>. Mỗi khung khoảng 1,5–2 phút. Nếu đặt <code>GFLOW_PROFILE</code> thì đăng nhập bằng <code>gflow auth login --browser chrome --profile &lt;tên&gt;</code>. Đừng đóng cửa sổ Chrome gflow mở ra khi đang vẽ. Đây là công cụ không chính thức,
+        điều khiển Chrome bằng tài khoản Google của bạn và có thể hỏng khi Google đổi giao diện Flow.
+      </p>
       <p>Hết quota thì agy báo lỗi; chờ quota hồi rồi bấm vẽ tiếp phần còn thiếu.</p>
     </section>
 

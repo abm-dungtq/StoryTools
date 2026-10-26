@@ -104,6 +104,16 @@ export async function saveSettings({ textModel, imageModel }) {
   });
 }
 
+/** The Google Flow project gflow draws frames in, so each call can skip creating one. */
+export const getGflowProjectId = async () => (await readJson(SETTINGS_FILE, {})).gflowProjectId || null;
+
+export async function saveGflowProjectId(id) {
+  await withFileLock(SETTINGS_FILE, async () => {
+    const saved = await readJson(SETTINGS_FILE, {});
+    await writeJsonNow(SETTINGS_FILE, { ...saved, gflowProjectId: id || undefined });
+  });
+}
+
 // ---- characters ----
 export const listCharacters = () => readJson(CHARACTERS_FILE, []);
 export const saveCharacters = (characters) => writeJson(CHARACTERS_FILE, characters);

@@ -23,7 +23,7 @@ export default function SettingsView({ settings, onSaved }) {
       .listModels()
       .then((list) => {
         setModels(list);
-        setModelsNote(`Danh sách lấy từ lệnh agy models (${list.text.length} model).`);
+        setModelsNote(`Danh sách model viết lấy từ lệnh agy models (${list.text.length} model).`);
       })
       .catch((err) => setModelsNote(`Không lấy được danh sách model: ${err.message}`));
   }, [settings]);
@@ -54,9 +54,19 @@ export default function SettingsView({ settings, onSaved }) {
         <input list="text-models" value={textModel} onChange={(e) => setTextModel(e.target.value)} />
       </label>
       <ImageModelSelect value={imageModel} onChange={setImageModel} stacked />
+      {settings?.gflowVersion ? (
+        <p className="muted small">
+          Đã cài gflow-cli {settings.gflowVersion}: chọn model "Google Flow" để vẽ thẳng qua Google Flow, dùng hạn mức ảnh riêng của Flow.
+          Phiên đăng nhập Flow hết hạn thì chạy <code>gflow auth login</code> lại.
+        </p>
+      ) : (
+        <p className="muted small">
+          Muốn vẽ thẳng qua Google Flow: cài gflow-cli (<code>uv tool install gflow-cli</code>), chạy <code>gflow auth login</code> rồi khởi động lại server.
+        </p>
+      )}
       <datalist id="text-models">{models.text.map((m) => <option key={m} value={m} />)}</datalist>
       <p className="muted small">
-        {modelsNote} agy tự chọn model vẽ ảnh; ô trên chọn model điều khiển việc vẽ. Mỗi khung mất khoảng 70–90 giây.
+        {modelsNote} Với model agy, agy tự chọn model vẽ thật; ô trên chọn model điều khiển việc vẽ. Mỗi khung mất khoảng 1–2 phút.
       </p>
       <div className="row">
         <button className="primary" type="submit">Lưu</button>

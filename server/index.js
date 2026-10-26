@@ -7,6 +7,7 @@ import multer from 'multer';
 import * as store from './storage.js';
 import { characterRefName, styleRefName } from '../src/lib/ref-names.js';
 import { agyVersion, describeCharacter, generateCaption, generateFrames, generateImage, generateStoryPlan, listModels, placeBubbles } from './agy.js';
+import { GFLOW_MODELS, generateImageWithGflow, gflowVersion, isGflowModel } from './gflow.js';
 import { shareStatus, startShare, stopShare } from './lan-share.js';
 
 const PORT = Number(process.env.PORT) || 5174;
@@ -61,7 +62,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 
 // ---- settings ----
 app.get('/api/settings', async (_req, res) => {
   const { textModel, imageModel } = await store.getSettings();
-  res.json({ textModel, imageModel, agyVersion: await agyVersion() });
+  res.json({ textModel, imageModel, agyVersion: await agyVersion(), gflowVersion: await gflowVersion() });
 });
 
 app.put('/api/settings', async (req, res) => {
@@ -73,7 +74,13 @@ app.put('/api/settings', async (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/models', async (_req, res) => res.json(await listModels()));
+// Image models: Google Flow ones (when gflow-cli is installed) first, then agy's. Either list may be missing.
+app.get('/api/models', async (_req, res) => {
+  const [agy, gflow] = await Promise.all([listModels().catch(() => null), gflowVersion()]);
+  if (!agy && !gflow) throw new Error('Không chạy được agy models và chưa cài gflow-cli');
+  const flow = gflow ? GFLOW_MODELS : [];
+  res.json({ text: agy?.text || [], image: [...flow.map((m) => m.id), ...(agy?.image || [])], labels: Object.fromEntries(flow.map((m) => [m.id, m.label])) });
+});
 
 // ---- characters ----
 app.get('/api/characters', async (_req, res) => res.json(await store.listCharacters()));
@@ -232,7 +239,10 @@ app.post('/api/projects/:id/images/generate', async (req, res) => {
     });
   }
 
-  const image = await generateImage({ settings: await store.getSettings(), prompt, refs, aspectRatio, signal: clientSignal(res) });
+  const settings = await store.getSettings();
+  const image = isGflowModel(settings.imageModel)
+    ? await generateImageWithGflow({ model: settings.imageModel, prompt, refs, aspectRatio, signal: clientSignal(res) })
+    : await generateImage({ settings, prompt, refs, aspectRatio, signal: clientSignal(res) });
   const file = await store.saveImage(frameDir, image.buffer, image.mimeType);
   res.json({ file });
 });

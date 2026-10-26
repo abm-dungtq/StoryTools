@@ -5,3 +5,4 @@ data/
 .bench-base/
 plans/**/bench/results/
 plans/**/screens/
+plans/**/out*/

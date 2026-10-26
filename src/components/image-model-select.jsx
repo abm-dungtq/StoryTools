@@ -2,20 +2,27 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { formatDuration } from '../lib/time-estimate.js';
 
-// One `agy models` call shared by every dropdown on the page.
+// One model-list call shared by every dropdown on the page: Google Flow models (gflow-cli) and agy models.
 let modelsPromise;
 const loadModels = () =>
   (modelsPromise ??= api.listModels().catch(() => {
     // Let the next dropdown retry instead of caching the failure for the whole page.
     modelsPromise = undefined;
-    return { image: [] };
+    return { image: [], labels: {} };
   }));
 
-/** Dropdown for the agy model that drives image generation, plus the expected time for `frames` frames when given. */
+/**
+ * Dropdown for the image model: a Google Flow model (drawn through gflow-cli) or the agy model that drives drawing,
+ * plus the expected time for `frames` frames when given.
+ */
 export default function ImageModelSelect({ value, onChange, frames = 0, disabled = false, stacked = false }) {
   const [models, setModels] = useState([]);
+  const [labels, setLabels] = useState({});
   useEffect(() => {
-    loadModels().then((m) => setModels(m.image || []));
+    loadModels().then((m) => {
+      setModels(m.image || []);
+      setLabels(m.labels || {});
+    });
   }, []);
   // Keep a configured model selectable even when the list doesn't have it, instead of silently switching it.
   const options = !value || models.includes(value) ? models : [value, ...models];
@@ -23,10 +30,10 @@ export default function ImageModelSelect({ value, onChange, frames = 0, disabled
   return (
     <span className={stacked ? 'stack tight' : 'row wrap'}>
       <label className={stacked ? '' : 'inline'}>
-        Model điều khiển vẽ ảnh (agy)
+        Model vẽ ảnh
         <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} style={stacked ? { width: '100%' } : undefined}>
           {options.map((id) => (
-            <option key={id} value={id}>{id}</option>
+            <option key={id} value={id}>{labels[id] || (id.startsWith('gflow:') ? id : `agy · ${id}`)}</option>
           ))}
         </select>
       </label>

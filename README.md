@@ -79,7 +79,7 @@ Mô tả được chèn tự động vào prompt của mọi khung có nhân v�
 Cách nhanh nhất: chỉ nhập cốt truyện, phần còn lại tool tự chạy. Vào **Truyện → tạo truyện mới → bước 1. Kịch bản**, thẻ **🤖 Tự động tạo truyện**.
 
 1. **Nhập cốt truyện.** Viết vài câu về diễn biến và cái kết, gọi nhân vật đúng tên. Chọn **số ảnh** (1–35) và **khung mỗi ảnh**: cố định 1–4, hoặc để AI tự chọn 1–3 tuỳ cảnh.
-2. **Xem thời gian ước tính.** Bên cạnh dropdown **Model điều khiển vẽ ảnh (agy)** là thời gian cho cả truyện, ví dụ *≈ ~15 phút cho 10 khung*. Đổi model ở đây là lưu luôn cho cả tool.
+2. **Xem thời gian ước tính.** Bên cạnh dropdown **Model vẽ ảnh** là thời gian cho cả truyện, ví dụ *≈ ~15 phút cho 10 khung*. Đổi model ở đây là lưu luôn cho cả tool.
 3. **Bấm Tự động tạo cả truyện.** Tool hỏi xác nhận kèm thời gian ước tính, rồi chạy tuần tự: AI viết toàn bộ kịch bản trong một lần gọi, vẽ từng khung (gửi kèm ảnh khung trước để giữ phong cách), sau đó nhìn ảnh vừa vẽ để đặt bóng thoại vào vùng trống và chỉnh câu thoại cho khớp biểu cảm. Muốn đọc kịch bản trước khi mất thời gian vẽ thì tick **Dừng lại để duyệt kịch bản trước khi vẽ**.
 4. **Duyệt kết quả.** Chạy xong tool tự chuyển sang bước 3 để bạn sửa lời thoại và vị trí bóng, rồi sang bước 4 để đăng.
 
@@ -150,9 +150,23 @@ Truyện 10 khung mất khoảng 15 phút; 35 ảnh × 2 khung mất khoảng 1 
 Tab **Cài đặt** có hai ô, danh sách gợi ý lấy từ lệnh `agy models`:
 
 - **Model viết kịch bản, caption, đặt lời thoại**: mặc định `gemini-4-argon-medium`. Chọn `gemini-3.8-flash-low` nếu muốn nhanh hơn.
-- **Model điều khiển vẽ ảnh (agy)**: mặc định `gemini-3.8-flash-low`. agy tự chọn model vẽ thật; ô này chỉ chọn model điều khiển việc vẽ.
+- **Model vẽ ảnh**: mặc định `agy · gemini-3.8-flash-low`. Với model agy, agy tự chọn model vẽ thật; ô này chỉ chọn model điều khiển việc vẽ. Khi đã cài gflow-cli, danh sách có thêm **Google Flow · Nano Banana 2** và **Google Flow · Nano Banana Pro** (xem dưới).
 
 Hết quota thì agy báo lỗi; chờ quota hồi rồi bấm vẽ tiếp phần còn thiếu.
+
+### Vẽ ảnh qua Google Flow (tuỳ chọn)
+
+[gflow-cli](https://github.com/ffroliva/gflow-cli) gửi prompt và ảnh mẫu thẳng tới Google Flow (model Nano Banana) bằng tài khoản Google của bạn, không qua vòng tác tử của agy. Ảnh dùng hạn mức ảnh riêng của Flow, tách khỏi quota của agy. Viết kịch bản, đặt lời thoại và caption vẫn chạy bằng agy.
+
+```bash
+uv tool install gflow-cli                                    # cần uv: https://docs.astral.sh/uv/
+uv tool run --from gflow-cli playwright install chromium     # một lần, khoảng 150 MB
+gflow auth login --browser chrome                            # đăng nhập Google trong cửa sổ Chrome hiện ra
+```
+
+Khởi động lại server, rồi chọn model **Google Flow · …** ở tab Cài đặt hoặc ngay ở bước 1/2. Mỗi khung mất khoảng 1,5–2 phút; lần đầu tool tạo sẵn một project "StoryTools" trên Flow và dùng lại cho các lần sau. Biến `GFLOW_BIN` (đường dẫn lệnh gflow) và `GFLOW_PROFILE` (tên profile đăng nhập) đặt trong `.env` nếu cần; đặt `GFLOW_PROFILE` thì đăng nhập bằng `gflow auth login --browser chrome --profile <tên>`. Mỗi khung gflow mở một cửa sổ Chrome: đừng đóng nó khi đang vẽ. Mỗi khung nhận tối đa 10 ảnh mẫu; nhiều hơn thì tool giữ ảnh đầu của từng nhân vật và khung trước.
+
+gflow-cli không phải công cụ chính thức của Google: nó điều khiển một cửa sổ Chrome thật bằng tài khoản của bạn, có thể hỏng khi Google đổi giao diện Flow, và việc tự động hoá thuộc trách nhiệm của chủ tài khoản theo điều khoản của Google.
 
 ## Mẹo giữ nhân vật
 
@@ -170,6 +184,8 @@ Hết quota thì agy báo lỗi; chờ quota hồi rồi bấm vẽ tiếp phầ
 | Cảnh báo *"Không tìm thấy agy CLI"* | Cài agy và đăng nhập, đặt `AGY_BIN` trong `.env` nếu agy không nằm trong PATH, rồi khởi động lại server |
 | *"agy: không tạo được ảnh"* | Có thể đã hết quota hoặc nội dung bị chặn. Sửa câu mô tả ở bước 2, hoặc chờ quota hồi rồi tạo lại khung đó |
 | *"agy: quá …s không xong"* | agy treo hoặc quá chậm. Bấm vẽ lại khung đó |
+| *"gflow: không tạo được ảnh"* | Chạy `gflow auth status`; nếu phiên hết hạn thì `gflow auth login` lại. Có thể đã hết hạn mức ảnh của Flow: đổi sang model agy hoặc chờ |
+| *"gflow: không tìm thấy lệnh gflow"* | Cài gflow-cli như hướng dẫn ở trên, hoặc đặt `GFLOW_BIN` trong `.env`, rồi khởi động lại server |
 | *"agy: trả về sai định dạng"* | Model trả lời không đúng JSON. Bấm lại; nếu lặp lại nhiều lần, đổi model viết kịch bản trong Cài đặt |
 | Điện thoại không mở được mã QR | Kiểm tra hai máy cùng Wi-Fi, cho phép Node.js qua tường lửa ở mạng Private, và thử địa chỉ khác trong danh sách (bỏ qua các adapter vEthernet, WSL) |
 | Trình duyệt chặn khi tải nhiều PNG | Cho phép trang tải nhiều file, hoặc dùng Xuất PDF rồi tách ảnh sau |

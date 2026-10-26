@@ -69,9 +69,10 @@ Thanh bước phía trên đánh dấu ✓ cho bước đã xong.
 - Tỉ lệ ảnh yêu cầu AI = tỉ lệ gần nhất với ô khung; ảnh được crop vừa ô. Nếu agy trả ảnh sai hướng (lệch hơn ~15%), tool tự vẽ lại một lần.
 - "Gửi kèm ảnh khung trước" giúp đồng nhất phong cách.
 - Dữ liệu nằm trong `data/` (JSON + ảnh), đã gitignore.
-- Model mặc định: viết kịch bản/đặt thoại/caption `gemini-4-argon-medium`, điều khiển vẽ ảnh `gemini-3.8-flash-low` (agy tự chọn model vẽ thật). Gợi ý lấy từ lệnh `agy models`.
+- Model mặc định: viết kịch bản/đặt thoại/caption `gemini-4-argon-medium`, vẽ ảnh `agy · gemini-3.8-flash-low` (agy tự chọn model vẽ thật). Gợi ý lấy từ lệnh `agy models`.
+- Đã cài [gflow-cli](https://github.com/ffroliva/gflow-cli) và `gflow auth login` thì danh sách model vẽ có thêm **Google Flow · Nano Banana 2/Pro**: vẽ thẳng qua Google Flow bằng hạn mức ảnh riêng của Flow, khoảng 1,5–2 phút/khung. Chi tiết cài đặt ở README, mục "Vẽ ảnh qua Google Flow".
 - Không tính tiền theo lượt; dùng quota gói agy. Vẽ ~75 giây/khung, đặt thoại ~15 giây/khung: truyện 10 khung ~15 phút. Hết quota thì agy báo lỗi, chờ rồi chạy tiếp.
-- Dropdown **Model điều khiển vẽ ảnh** (tab Cài đặt, thẻ Tự động tạo truyện, bước 2) hiện thời gian ước tính. Đổi ở bước 1/2 là lưu ngay cho cả tool.
+- Dropdown **Model vẽ ảnh** (tab Cài đặt, thẻ Tự động tạo truyện, bước 2) hiện thời gian ước tính. Đổi ở bước 1/2 là lưu ngay cho cả tool.
 - Lỗi thường gặp: "Không tìm thấy agy CLI" (cài, đăng nhập, đặt `AGY_BIN`), "agy: không tạo được ảnh" (hết quota hoặc nội dung bị chặn), "agy: quá …s không xong" (vẽ lại khung đó).
 
 ## Cấu trúc
