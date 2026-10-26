@@ -131,7 +131,15 @@ function killTree(child) {
     if (process.platform === 'win32') {
       spawn('taskkill', ['/T', '/F', '/PID', String(child.pid)], { windowsHide: true, stdio: 'ignore' }).on('error', () => {});
     } else {
+      // Signal the whole process group (macOS/Linux); force it if anything in the group ignores SIGTERM.
       process.kill(-child.pid, 'SIGTERM');
+      setTimeout(() => {
+        try {
+          process.kill(-child.pid, 'SIGKILL');
+        } catch {
+          // Group already exited.
+        }
+      }, 5000).unref();
     }
   } catch {
     // Already gone.

@@ -30,7 +30,7 @@ Bản hướng dẫn có giao diện đẹp hơn: [`docs/huong-dan-su-dung.html`
 
 Yêu cầu:
 
-- Node.js 20 trở lên.
+- Node.js 22 trở lên. Chạy được trên Windows và macOS.
 - **agy CLI** (Google Antigravity) đã cài và đăng nhập: gõ `agy --version` trong terminal phải in ra phiên bản. Tool dùng gói đăng ký của bạn, không cần khoá riêng hay bật thanh toán theo lượt.
 
 ```bash
@@ -39,7 +39,7 @@ npm run dev     # mở http://127.0.0.1:5173
 npm test        # test phía server (node:test)
 ```
 
-Nếu `agy` không nằm trong PATH, chép `.env.example` thành `.env` và đặt `AGY_BIN` trỏ tới file `agy.exe`. Khi server không tìm thấy agy, đầu trang hiện cảnh báo.
+Nếu `agy` không nằm trong PATH, chép `.env.example` thành `.env` và đặt `AGY_BIN` trỏ tới file agy: trên Windows là `agy.exe`, trên macOS là đường dẫn mà lệnh `which agy` in ra. Khi server không tìm thấy agy, đầu trang hiện cảnh báo.
 
 Muốn chạy bản build thay vì bản dev:
 
@@ -133,7 +133,7 @@ Bước 4 gom mọi thứ cần cho một bài đăng. Phía trên là carousel 
 
 > **Vì sao phải đăng tay:** API của TikTok không cho chọn một bài nhạc cụ thể trong thư viện, và app chưa qua kiểm duyệt chỉ đăng được bài ở chế độ riêng tư. Đăng tay nhanh hơn và được chọn đúng nhạc đang trend.
 
-Lần đầu bấm chia sẻ Wi-Fi, Windows sẽ hỏi quyền mạng cho Node.js. Chọn cho phép **Private networks**.
+Lần đầu bấm chia sẻ Wi-Fi, máy sẽ hỏi quyền mạng cho Node.js. Trên Windows, chọn cho phép **Private networks**. Trên macOS, chọn **Allow** khi được hỏi có cho "node" nhận kết nối đến không.
 
 ## Thời gian và model
 

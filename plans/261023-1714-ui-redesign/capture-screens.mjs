@@ -38,7 +38,13 @@ if (!Number.isInteger(WIDTH) || WIDTH < 320 || WIDTH > 3840) throw new Error(`--
 if (emptyMode && autoRun) throw new Error('--auto-run cannot be combined with --empty');
 mkdirSync(outDir, { recursive: true });
 
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const CHROME =
+  process.env.CHROME_PATH ||
+  {
+    win32: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    darwin: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  }[process.platform] ||
+  'google-chrome';
 const PORT = 9333;
 const chrome = spawn(CHROME, [
   '--headless=new', `--remote-debugging-port=${PORT}`, `--window-size=${WIDTH},1000`, '--hide-scrollbars',

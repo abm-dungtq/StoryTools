@@ -299,12 +299,12 @@
 npm run dev     <span class="cmt"># mở http://127.0.0.1:5173</span>
 npm test        <span class="cmt"># test phía server</span></code></pre>
       <p>
-        Cần Node.js 20 trở lên và <strong>agy CLI</strong> (Google Antigravity) đã cài và đăng nhập: gõ <code>agy --version</code> trong terminal
+        Cần Node.js 22 trở lên (Windows hoặc macOS) và <strong>agy CLI</strong> (Google Antigravity) đã cài và đăng nhập: gõ <code>agy --version</code> trong terminal
         phải in ra phiên bản. Tool dùng gói đăng ký của bạn, không cần khoá riêng hay bật thanh toán theo lượt.
       </p>
       <p>
         Nếu <code>agy</code> không nằm trong PATH, chép <code>.env.example</code> thành <code>.env</code> và đặt <code>AGY_BIN</code> trỏ tới file
-        <code>agy.exe</code>. Khi server không tìm thấy agy, đầu trang hiện cảnh báo.
+        agy: trên Windows là <code>agy.exe</code>, trên macOS là đường dẫn mà lệnh <code>which agy</code> in ra. Khi server không tìm thấy agy, đầu trang hiện cảnh báo.
       </p>
       <p>Muốn chạy bản build thay vì bản dev: <code>npm run build</code> rồi <code>npm start</code>, mở <code>http://127.0.0.1:5174</code>.</p>
       <div class="note">
@@ -457,7 +457,7 @@ npm test        <span class="cmt"># test phía server</span></code></pre>
       <div class="note">
         <p><b>Vì sao phải đăng tay:</b> API của TikTok không cho chọn một bài nhạc cụ thể trong thư viện, và app chưa qua kiểm duyệt chỉ đăng được bài ở chế độ riêng tư. Đăng tay nhanh hơn và được chọn đúng nhạc đang trend.</p>
       </div>
-      <p>Lần đầu bấm chia sẻ Wi-Fi, Windows sẽ hỏi quyền mạng cho Node.js. Chọn cho phép <strong>Private networks</strong>.</p>
+      <p>Lần đầu bấm chia sẻ Wi-Fi, máy sẽ hỏi quyền mạng cho Node.js. Trên Windows, chọn cho phép <strong>Private networks</strong>. Trên macOS, chọn <strong>Allow</strong>.</p>
     </section>
 
     <section id="thoi-gian">

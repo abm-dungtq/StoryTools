@@ -185,8 +185,8 @@ export default function PublishPanel({ project, update, blobs, missingFrames }) 
                 </button>
               </div>
               <p className="muted small">
-                Mở một trang chỉ đọc trong 30 phút, có link bí mật. Lần đầu Windows có thể hỏi quyền mạng cho Node.js, chọn cho phép mạng
-                Private.
+                Mở một trang chỉ đọc trong 30 phút, có link bí mật. Lần đầu máy có thể hỏi quyền mạng cho Node.js: chọn
+                Private networks (Windows) hoặc Allow (macOS).
               </p>
             </>
           )}

@@ -7,7 +7,8 @@ import QRCode from 'qrcode';
 
 const SHARE_PORT = Number(process.env.SHARE_PORT) || 5175;
 const TTL_MS = 30 * 60 * 1000;
-const VIRTUAL_ADAPTER = /vethernet|virtual|vmware|hyper-v|wsl|docker|loopback|tailscale|zerotier|vpn/i;
+// Windows (vEthernet, WSL…) and macOS (utun VPN tunnels, awdl/llw AirDrop links, bridge for VMs) adapters a phone cannot reach.
+const VIRTUAL_ADAPTER = /vethernet|virtual|vmware|hyper-v|wsl|docker|loopback|tailscale|zerotier|vpn|utun|awdl|llw|bridge/i;
 
 let share = null; // { projectId, token, title, text, music, files: Buffer[], links, expiresAt, server, timer }
 

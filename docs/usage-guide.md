@@ -57,7 +57,7 @@ Thanh bước phía trên đánh dấu ✓ cho bước đã xong.
 - Chạy một server riêng ở cổng `SHARE_PORT` (mặc định 5175) trên mạng LAN, **chỉ** phục vụ trang `/s/<token>` chỉ đọc. Tool chính vẫn chỉ mở ở `127.0.0.1`.
 - Link có token ngẫu nhiên, tự tắt sau 30 phút hoặc khi bấm "Dừng chia sẻ". Mỗi lúc chỉ chia sẻ 1 truyện.
 - Ảnh gửi đi là bản tại thời điểm bấm chia sẻ; sửa truyện thì bấm "Chia sẻ lại".
-- Lần đầu Windows có thể hỏi quyền mạng cho Node.js: cho phép **Private networks**. Nếu điện thoại không mở được, kiểm tra cùng Wi-Fi và thử địa chỉ khác trong danh sách (bỏ qua các adapter `vEthernet`/WSL).
+- Lần đầu máy có thể hỏi quyền mạng cho Node.js: trên Windows cho phép **Private networks**, trên macOS chọn **Allow**. Nếu điện thoại không mở được, kiểm tra cùng Wi-Fi và thử địa chỉ khác trong danh sách (bỏ qua các adapter `vEthernet`/WSL trên Windows, `utun`/`bridge` trên macOS).
 - TikTok cho tối đa 35 ảnh mỗi bài.
 
 ## Ghi chú
